@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer } from 'lucide-react';
+import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee } from 'lucide-react';
 import { Recipe, Category, UserColorMap } from './types';
 import { INITIAL_RECIPES } from './data';
 
@@ -213,6 +213,55 @@ const RecipeCard: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: bo
         </div>
       </div>
     </div>
+  );
+};
+
+// --- New Category Card Component ---
+const CategoryCard: React.FC<{ category: Category; count: number; onClick: () => void }> = ({ category, count, onClick }) => {
+  const getIcon = (cat: Category) => {
+    switch(cat) {
+      case Category.APPETIZERS: return <Pizza className="text-amber-600" size={32} />;
+      case Category.SOUPS_SALADS: return <Soup className="text-emerald-600" size={32} />;
+      case Category.BREADS_MUFFINS: return <Croissant className="text-orange-600" size={32} />;
+      case Category.MAIN_DISHES: return <UtensilsCrossed className="text-rose-600" size={32} />;
+      case Category.SIDE_DISHES: return <Leaf className="text-lime-600" size={32} />;
+      case Category.DESSERTS: return <Cake className="text-pink-600" size={32} />;
+      case Category.SAUCES: return <Droplet className="text-sky-600" size={32} />;
+      default: return <UtensilsCrossed className="text-stone-600" size={32} />;
+    }
+  };
+
+  const getGradient = (cat: Category) => {
+    switch(cat) {
+      case Category.APPETIZERS: return "from-amber-50 to-amber-100/50 hover:to-amber-100";
+      case Category.SOUPS_SALADS: return "from-emerald-50 to-emerald-100/50 hover:to-emerald-100";
+      case Category.BREADS_MUFFINS: return "from-orange-50 to-orange-100/50 hover:to-orange-100";
+      case Category.MAIN_DISHES: return "from-rose-50 to-rose-100/50 hover:to-rose-100";
+      case Category.SIDE_DISHES: return "from-lime-50 to-lime-100/50 hover:to-lime-100";
+      case Category.DESSERTS: return "from-pink-50 to-pink-100/50 hover:to-pink-100";
+      case Category.SAUCES: return "from-sky-50 to-sky-100/50 hover:to-sky-100";
+      default: return "from-stone-50 to-stone-100/50 hover:to-stone-100";
+    }
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`group relative p-8 rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-gradient-to-br ${getGradient(category)} flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1`}
+    >
+      <div className="bg-white p-4 rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 ring-4 ring-white/50">
+        {getIcon(category)}
+      </div>
+      <div>
+        <h3 className="font-serif text-xl font-bold text-stone-800 mb-1">{category}</h3>
+        <p className="text-xs font-bold uppercase tracking-widest text-stone-500 group-hover:text-stone-700 transition-colors">
+          {count} {count === 1 ? 'Recipe' : 'Recipes'}
+        </p>
+      </div>
+      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+        <ChevronRight className="text-stone-400" size={20} />
+      </div>
+    </button>
   );
 };
 
@@ -521,10 +570,21 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
 
   // Pre-select color based on name if editing or if user typed name
   useEffect(() => {
-      if(addedBy && !userColor) {
-          setUserColor(getAvatarColor(addedBy));
+      if(initialData?.addedBy && !userColor) {
+          setUserColor(getAvatarColor(initialData.addedBy, initialData.userColor));
       }
-  }, [addedBy, userColor]);
+  }, []);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newName = e.target.value;
+      setAddedBy(newName);
+      // Automatically update color to match the new name, unless user manually picks one later
+      setUserColor(getAvatarColor(newName));
+  };
+
+  const handleColorSelect = (color: string) => {
+      setUserColor(color);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -608,7 +668,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Recipe Owner <span className="text-rose-500">*</span></label>
-              <input required value={addedBy} onChange={e => setAddedBy(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="Who is adding this?" />
+              <input required value={addedBy} onChange={handleNameChange} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="Who is adding this?" />
             </div>
             <div className="md:col-span-2 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
               <label className="block text-xs font-bold uppercase text-stone-500 mb-4 flex items-center gap-2 tracking-wider"><Palette size={14}/> Owner Avatar Color</label>
@@ -617,7 +677,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
                   <button
                     key={color}
                     type="button"
-                    onClick={() => setUserColor(color)}
+                    onClick={() => handleColorSelect(color)}
                     className={`w-10 h-10 rounded-full shadow-sm transition-all hover:scale-110 hover:shadow-md ${userColor === color ? 'ring-4 ring-offset-2 ring-stone-200 scale-110' : ''}`}
                     style={{ backgroundColor: color }}
                   />
@@ -654,7 +714,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
 };
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'intro' | 'list' | 'detail'>('intro');
+  const [view, setView] = useState<'intro' | 'categories' | 'list' | 'detail'>('intro');
   const [isPrinting, setIsPrinting] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -666,6 +726,12 @@ const App: React.FC = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  
+  // New state for mobile category view navigation
+  const [mobileView, setMobileView] = useState<'categories' | 'recipes'>('categories');
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize data on mount
   useEffect(() => {
@@ -695,6 +761,15 @@ const App: React.FC = () => {
       setFavorites(JSON.parse(storedFavs));
     }
   }, []);
+  
+  // Check if mobile on initial load to set correct view
+  useEffect(() => {
+      if (window.innerWidth < 768) {
+          setMobileView('categories');
+      } else {
+          setMobileView('recipes'); // Desktop default
+      }
+  }, [view]); // Reset when changing main view
 
   // Persist recipes whenever they change
   useEffect(() => {
@@ -716,7 +791,7 @@ const App: React.FC = () => {
   };
 
   const handleStart = () => {
-    setView('list');
+    setView('categories');
     window.scrollTo(0,0);
   };
 
@@ -726,13 +801,21 @@ const App: React.FC = () => {
     window.scrollTo(0,0);
     setIsSearchFocused(false);
     setSearchTerm('');
+    setActiveSuggestion(-1);
   };
+  
+  const handleCategorySelect = (cat: Category | 'All' | 'Favorites') => {
+      setSelectedCategory(cat);
+      setMobileMenuOpen(false);
+      setView('list'); // Ensure we switch to list view
+  }
 
   const handleAddRecipe = (newRecipe: Recipe) => {
     const updatedRecipes = [...recipes, newRecipe];
     setRecipes(updatedRecipes);
     setShowAddModal(false);
     setSelectedCategory(newRecipe.category);
+    setView('list');
     setSearchTerm('');
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
@@ -746,6 +829,16 @@ const App: React.FC = () => {
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
   }
+  
+  const handleSearchChange = (value: string) => {
+      setSearchTerm(value);
+      setActiveSuggestion(-1);
+      // Automatically switch to list view if searching from categories view
+      if (view === 'categories' && value.trim().length > 0) {
+          setView('list');
+          setSelectedCategory('All');
+      }
+  };
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(r => {
@@ -769,6 +862,31 @@ const App: React.FC = () => {
       .filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()))
       .slice(0, 5);
   }, [recipes, searchTerm]);
+
+  // Handle keyboard navigation for search
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+      if (!isSearchFocused || searchSuggestions.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setActiveSuggestion(prev => (prev + 1) % searchSuggestions.length);
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setActiveSuggestion(prev => (prev - 1 + searchSuggestions.length) % searchSuggestions.length);
+      } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (activeSuggestion >= 0 && activeSuggestion < searchSuggestions.length) {
+              handleRecipeClick(searchSuggestions[activeSuggestion]);
+              searchInputRef.current?.blur();
+          }
+      } else if (e.key === 'Escape') {
+          setIsSearchFocused(false);
+          setActiveSuggestion(-1);
+          searchInputRef.current?.blur();
+      }
+  };
+
+  const getCategoryCount = (cat: Category) => recipes.filter(r => r.category === cat).length;
 
   if (isPrinting) {
     return <PrintLayout recipes={recipes} onExit={() => setIsPrinting(false)} />;
@@ -820,21 +938,35 @@ const App: React.FC = () => {
           </div>
 
           <nav className="space-y-2 flex-1 px-2">
-            <button 
-               onClick={() => { setSelectedCategory('All'); setMobileMenuOpen(false); }}
+            {/* New Home Button for Categories View */}
+             <button 
+               onClick={() => { setView('categories'); setMobileMenuOpen(false); setSearchTerm(''); }}
                className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
-                 ${selectedCategory === 'All' 
+                 ${view === 'categories'
                    ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-sky-800 border border-white/60 font-bold' 
                    : 'text-stone-600 hover:bg-white/40 hover:text-sky-700 hover:shadow-sm'}`}
             >
-              <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === 'All' ? 'bg-sky-100 text-sky-700' : 'bg-sky-50 group-hover:bg-white'}`}>
-                <Home size={18} />
+              <div className={`p-1.5 rounded-lg transition-colors ${view === 'categories' ? 'bg-sky-100 text-sky-700' : 'bg-sky-50 group-hover:bg-white'}`}>
+                <LayoutGrid size={18} />
+              </div>
+              <span className="relative z-10">Categories</span>
+            </button>
+
+            <button 
+               onClick={() => { setSelectedCategory('All'); setView('list'); setMobileMenuOpen(false); }}
+               className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
+                 ${view === 'list' && selectedCategory === 'All' 
+                   ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-sky-800 border border-white/60 font-bold' 
+                   : 'text-stone-600 hover:bg-white/40 hover:text-sky-700 hover:shadow-sm'}`}
+            >
+              <div className={`p-1.5 rounded-lg transition-colors ${view === 'list' && selectedCategory === 'All' ? 'bg-sky-100 text-sky-700' : 'bg-sky-50 group-hover:bg-white'}`}>
+                <List size={18} />
               </div>
               <span className="relative z-10">All Recipes</span>
             </button>
 
             <button 
-               onClick={() => { setSelectedCategory('Favorites'); setMobileMenuOpen(false); }}
+               onClick={() => { setSelectedCategory('Favorites'); setView('list'); setMobileMenuOpen(false); }}
                className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
                  ${selectedCategory === 'Favorites' 
                    ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-rose-800 border border-white/60 font-bold' 
@@ -857,14 +989,14 @@ const App: React.FC = () => {
               {Object.values(Category).map(cat => (
                 <button
                   key={cat}
-                  onClick={() => { setSelectedCategory(cat); setMobileMenuOpen(false); }}
+                  onClick={() => handleCategorySelect(cat)}
                   className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-between group
-                    ${selectedCategory === cat 
+                    ${selectedCategory === cat && view === 'list'
                       ? 'bg-white shadow-sm text-sky-700 font-bold border border-stone-100 translate-x-1' 
                       : 'text-stone-500 hover:text-sky-600 hover:bg-white/50'}`}
                 >
                   <span>{cat}</span>
-                  {selectedCategory === cat && <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>}
+                  {selectedCategory === cat && view === 'list' && <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>}
                 </button>
               ))}
             </div>
@@ -900,10 +1032,12 @@ const App: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 border-b border-sky-200/60 pb-8">
              <div>
                 <h2 className="font-serif text-5xl text-stone-800 mb-3 tracking-tight drop-shadow-sm">
-                  {selectedCategory === 'All' ? 'Recipe Collection' : selectedCategory}
+                  {view === 'categories' ? 'Welcome to the Kitchen' : (selectedCategory === 'All' ? 'Recipe Collection' : selectedCategory)}
                 </h2>
                 <p className="text-stone-500 text-lg font-light">
-                  {filteredRecipes.length} {filteredRecipes.length === 1 ? 'recipe' : 'recipes'} found
+                   {view === 'categories' 
+                      ? "Select a category to browse recipes" 
+                      : `${filteredRecipes.length} ${filteredRecipes.length === 1 ? 'recipe' : 'recipes'} found`}
                 </p>
              </div>
              
@@ -912,17 +1046,19 @@ const App: React.FC = () => {
                  <Search className="text-stone-400 group-hover:text-sky-500 transition-colors" size={20} />
                </div>
                <input 
+                 ref={searchInputRef}
                  type="text" 
                  placeholder="Search recipes, ingredients..." 
                  value={searchTerm}
                  onFocus={() => setIsSearchFocused(true)}
                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                 onChange={(e) => setSearchTerm(e.target.value)}
+                 onChange={(e) => handleSearchChange(e.target.value)}
+                 onKeyDown={handleSearchKeyDown}
                  className="block w-full pl-12 pr-10 py-4 bg-white border border-stone-200 rounded-2xl leading-5 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm group-hover:shadow-md"
                />
                {searchTerm && (
                  <button 
-                   onClick={() => setSearchTerm('')}
+                   onClick={() => { setSearchTerm(''); setActiveSuggestion(-1); }}
                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
                  >
                    <X size={16} />
@@ -931,12 +1067,12 @@ const App: React.FC = () => {
 
                {/* Search Suggestions */}
                {isSearchFocused && searchTerm.trim() && searchSuggestions.length > 0 && (
-                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden animate-slide-up-fade">
-                   {searchSuggestions.map(suggestion => (
+                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden animate-slide-up-fade z-50">
+                   {searchSuggestions.map((suggestion, idx) => (
                      <button
                        key={suggestion.id}
                        onMouseDown={() => handleRecipeClick(suggestion)}
-                       className="w-full text-left px-4 py-3 hover:bg-sky-50 transition-colors text-sm text-stone-700 flex items-center gap-2"
+                       className={`w-full text-left px-4 py-3 transition-colors text-sm text-stone-700 flex items-center gap-2 ${idx === activeSuggestion ? 'bg-sky-100' : 'hover:bg-sky-50'}`}
                      >
                        <Search size={14} className="text-stone-400" />
                        {suggestion.title}
@@ -947,32 +1083,57 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          {/* Recipe Grid */}
-          {filteredRecipes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {filteredRecipes.map(recipe => (
-                <RecipeCard 
-                  key={recipe.id} 
-                  recipe={recipe} 
-                  onClick={() => handleRecipeClick(recipe)} 
-                  isFavorite={favorites.includes(recipe.id)}
-                  onToggleFavorite={(e) => toggleFavorite(e, recipe.id)}
+          {/* Categories Grid View */}
+          {view === 'categories' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+              {Object.values(Category).map(cat => (
+                <CategoryCard 
+                  key={cat} 
+                  category={cat} 
+                  count={getCategoryCount(cat)} 
+                  onClick={() => handleCategorySelect(cat)} 
                 />
               ))}
-            </div>
-          ) : (
-            <div className="text-center py-32 text-stone-400 bg-white/50 rounded-[2rem] border-2 border-dashed border-stone-200 backdrop-blur-sm">
-              <div className="bg-sky-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                <UtensilsCrossed size={48} className="opacity-30 text-stone-500" />
+              <div 
+                onClick={() => { setSelectedCategory('All'); setView('list'); }}
+                className="group relative p-8 rounded-3xl border border-dashed border-stone-300 hover:border-sky-400 bg-white/50 hover:bg-white transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-4 min-h-[200px]"
+              >
+                  <div className="bg-stone-50 p-4 rounded-full text-stone-400 group-hover:text-sky-600 group-hover:bg-sky-50 transition-colors">
+                    <List size={32} />
+                  </div>
+                  <h3 className="font-serif text-xl font-bold text-stone-600 group-hover:text-stone-800">Browse All Recipes</h3>
               </div>
-              <p className="text-3xl font-serif text-stone-600 mb-2">No recipes found.</p>
-              <p className="text-stone-500 max-w-md mx-auto">Try adjusting your search terms, selecting a different category, or add your own recipe to the collection!</p>
-              {selectedCategory === 'Favorites' && (
-                <button onClick={() => setSelectedCategory('All')} className="mt-8 px-6 py-3 bg-sky-50 text-sky-700 rounded-xl font-bold hover:bg-sky-100 transition-colors">
-                  Browse all recipes
-                </button>
-              )}
             </div>
+          )}
+
+          {/* Recipe List View */}
+          {view === 'list' && (
+            <>
+              {filteredRecipes.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  {filteredRecipes.map(recipe => (
+                    <RecipeCard 
+                      key={recipe.id} 
+                      recipe={recipe} 
+                      onClick={() => handleRecipeClick(recipe)} 
+                      isFavorite={favorites.includes(recipe.id)}
+                      onToggleFavorite={(e) => toggleFavorite(e, recipe.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-32 text-stone-400 bg-white/50 rounded-[2rem] border-2 border-dashed border-stone-200 backdrop-blur-sm">
+                  <div className="bg-sky-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <UtensilsCrossed size={48} className="opacity-30 text-stone-500" />
+                  </div>
+                  <p className="text-3xl font-serif text-stone-600 mb-2">No recipes found.</p>
+                  <p className="text-stone-500 max-w-md mx-auto">Try adjusting your search terms, selecting a different category, or add your own recipe to the collection!</p>
+                  <button onClick={() => { setSelectedCategory('All'); setView('categories'); }} className="mt-8 px-6 py-3 bg-sky-50 text-sky-700 rounded-xl font-bold hover:bg-sky-100 transition-colors">
+                    Back to Categories
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
