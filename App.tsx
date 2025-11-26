@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2 } from 'lucide-react';
+import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer } from 'lucide-react';
 import { Recipe, Category, UserColorMap } from './types';
 import { INITIAL_RECIPES } from './data';
 
@@ -21,19 +21,35 @@ const tartanStyles = {
 };
 
 const AVATAR_COLORS = [
-  '#b91c1c', // Red
-  '#b45309', // Amber
-  '#15803d', // Green
-  '#0e7490', // Cyan
-  '#1d4ed8', // Blue
-  '#7e22ce', // Purple
+  '#b91c1c', // Red (Heritage)
+  '#15803d', // Green (Heritage)
+  '#b45309', // Amber (Heritage)
+  '#0369a1', // Sky 700 (Theme)
+  '#334155', // Slate (Neutral)
+  '#4338ca', // Indigo
   '#be185d', // Pink
-  '#374151', // Gray
+  '#854d0e', // Bronze
+  '#0f766e', // Teal
+  '#7e22ce', // Purple
 ];
+
+// Deterministic color generator based on name
+const getAvatarColor = (name: string, explicitColor?: string) => {
+  if (explicitColor) return explicitColor;
+  if (name === 'Nan') return '#b45309'; // Amber for Nan, keeps heritage status
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+};
 
 // --- Components ---
 
-const Intro: React.FC<{ onStart: () => void; onSelectCategory: (c: Category) => void }> = ({ onStart, onSelectCategory }) => (
+const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => (
   <div style={tartanStyles} className="flex flex-col items-center justify-start min-h-screen w-full relative overflow-y-auto pb-20">
     <div className="absolute inset-0 bg-black/30 fixed"></div>
     
@@ -41,7 +57,6 @@ const Intro: React.FC<{ onStart: () => void; onSelectCategory: (c: Category) => 
       {/* Family Crest */}
       <div className="mb-8 flex justify-center">
         <div className="w-40 h-40 md:w-48 md:h-48 relative group perspective-1000">
-           {/* Placeholder for the user's uploaded crest image. */}
            <img 
              src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" 
              alt="MacIntosh Family Crest" 
@@ -56,7 +71,7 @@ const Intro: React.FC<{ onStart: () => void; onSelectCategory: (c: Category) => 
 
       <h1 className="font-serif text-5xl md:text-7xl text-stone-900 mb-2 tracking-tight drop-shadow-sm">Shirley’s Kitchen</h1>
       <h2 className="font-serif text-3xl md:text-4xl text-red-900 italic mb-6">Cooking with Nan</h2>
-      <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-t border-b border-stone-300 py-2 inline-block">
+      <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-t-b border-stone-300 py-2 inline-block border-t border-b">
         A Cherished Collection of Recipes Passed Down Through Generations
       </p>
       
@@ -78,7 +93,7 @@ const Intro: React.FC<{ onStart: () => void; onSelectCategory: (c: Category) => 
         </p>
       </div>
 
-      <div className="mb-16">
+      <div className="mb-8">
         <button
           onClick={onStart}
           className="group relative px-12 py-4 bg-teal-800 text-white font-serif text-xl rounded-sm shadow-xl hover:bg-teal-900 hover:-translate-y-1 transition-all duration-300 overflow-hidden ring-1 ring-teal-700/50"
@@ -89,25 +104,6 @@ const Intro: React.FC<{ onStart: () => void; onSelectCategory: (c: Category) => 
             Enter Kitchen
           </span>
         </button>
-      </div>
-
-      {/* Visual Table of Contents */}
-      <div className="text-left max-w-xl mx-auto border-t-2 border-stone-800 pt-10">
-        <h3 className="font-serif text-3xl text-center text-stone-900 mb-8">Table of Contents</h3>
-        <div className="space-y-3">
-          {Object.values(Category).map((cat, idx) => (
-            <button 
-              key={cat} 
-              onClick={() => onSelectCategory(cat)}
-              className="w-full flex items-baseline group hover:bg-stone-100 p-2 rounded transition-colors"
-            >
-              <span className="font-serif font-bold text-lg text-red-900 w-8">{idx + 1}</span>
-              <span className="font-serif text-xl text-stone-800 group-hover:underline decoration-amber-500 underline-offset-4">{cat}</span>
-              <div className="flex-1 border-b-2 border-dotted border-stone-300 mx-4 relative -top-1.5 opacity-50"></div>
-              <span className="font-serif italic text-stone-500 text-sm">Ch. {idx + 1}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       <p className="italic text-stone-900 font-bold font-serif text-xl mt-16">
@@ -122,7 +118,7 @@ const PrintLayout: React.FC<{ recipes: Recipe[]; onExit: () => void }> = ({ reci
     <div className="fixed top-0 left-0 right-0 bg-stone-900 text-white p-4 flex justify-between items-center print:hidden z-50 shadow-lg">
       <span className="font-bold flex items-center gap-2"><Printer /> Print Mode</span>
       <div className="flex gap-4">
-        <button onClick={() => window.print()} className="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded font-bold">Print Now</button>
+        <button onClick={() => window.print()} className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded font-bold">Print Now</button>
         <button onClick={onExit} className="bg-stone-700 hover:bg-stone-600 px-4 py-2 rounded">Exit</button>
       </div>
     </div>
@@ -171,7 +167,7 @@ const PrintLayout: React.FC<{ recipes: Recipe[]; onExit: () => void }> = ({ reci
 );
 
 const RecipeCard: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: boolean; onToggleFavorite: (e: React.MouseEvent) => void }> = ({ recipe, onClick, isFavorite, onToggleFavorite }) => {
-  const badgeColor = recipe.userColor || (recipe.addedBy === 'Nan' ? '#b45309' : '#374151');
+  const badgeColor = getAvatarColor(recipe.addedBy, recipe.userColor);
 
   return (
     <div 
@@ -200,7 +196,7 @@ const RecipeCard: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: bo
              <span className="flex items-center gap-1.5">
                <UtensilsCrossed size={14} className="text-sky-600/60" /> {recipe.ingredients.length} ingredients
              </span>
-             {recipe.cookTime && <span className="bg-stone-50 px-2 py-1 rounded text-stone-500">{recipe.cookTime}</span>}
+             {recipe.cookTime && <span className="bg-stone-50 px-2 py-1 rounded text-stone-500 flex items-center gap-1"><Clock size={12}/> {recipe.cookTime}</span>}
           </div>
           
           <div className="flex items-center gap-2.5 mt-1">
@@ -225,7 +221,7 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
   const [loadingTips, setLoadingTips] = useState(false);
   const [errorTips, setErrorTips] = useState<string | null>(null);
 
-  const badgeColor = recipe.userColor || (recipe.addedBy === 'Nan' ? '#b45309' : '#374151');
+  const badgeColor = getAvatarColor(recipe.addedBy, recipe.userColor);
 
   // Reset tips when recipe changes
   useEffect(() => {
@@ -233,6 +229,27 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
     setErrorTips(null);
     setLoadingTips(false);
   }, [recipe.id]);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: recipe.title,
+      text: `Check out this recipe for ${recipe.title} from Shirley's Kitchen!`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      const text = `${recipe.title}\n\n${recipe.description || ''}\n\nIngredients:\n${recipe.ingredients.join('\n')}\n\nInstructions:\n${recipe.instructions.join('\n')}`;
+      navigator.clipboard.writeText(text);
+      alert('Recipe copied to clipboard!');
+    }
+  };
 
   const getGeminiTips = async () => {
     if (!process.env.API_KEY) {
@@ -283,6 +300,9 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
       <div className="absolute top-4 right-4 z-20 flex gap-2 print:hidden">
         <button onClick={onEdit} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all text-stone-600" title="Edit Recipe">
           <Edit2 size={24} />
+        </button>
+        <button onClick={handleShare} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all text-stone-600" title="Share Recipe">
+          <Share2 size={24} />
         </button>
         <button onClick={() => window.print()} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all text-stone-600" title="Print Recipe">
           <Printer size={24} />
@@ -495,9 +515,16 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
   const [addedBy, setAddedBy] = useState(initialData?.addedBy || '');
   const [temp, setTemp] = useState(initialData?.temp || '');
   const [cookTime, setCookTime] = useState(initialData?.cookTime || '');
-  const [userColor, setUserColor] = useState(initialData?.userColor || AVATAR_COLORS[0]);
+  const [userColor, setUserColor] = useState(initialData?.userColor || '');
   const [yields, setYields] = useState(initialData?.yields || '');
   const [prepTime, setPrepTime] = useState(initialData?.prepTime || '');
+
+  // Pre-select color based on name if editing or if user typed name
+  useEffect(() => {
+      if(addedBy && !userColor) {
+          setUserColor(getAvatarColor(addedBy));
+      }
+  }, [addedBy, userColor]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -518,7 +545,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
       cookTime: cookTime || undefined,
       prepTime: prepTime || undefined,
       yields: yields || undefined,
-      userColor,
+      userColor: userColor || getAvatarColor(addedBy),
       timestamp: initialData?.timestamp || Date.now()
     };
     onSave(newRecipe);
@@ -638,6 +665,7 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Initialize data on mount
   useEffect(() => {
@@ -645,20 +673,17 @@ const App: React.FC = () => {
     const storedRecipes = localStorage.getItem('shirleys_kitchen_recipes');
     if (storedRecipes) {
       const parsedStored: Recipe[] = JSON.parse(storedRecipes);
-      // Create a map of stored recipes by ID for easier merging
       const storedMap = new Map(parsedStored.map(r => [r.id, r]));
       
-      // Start with initial recipes, check if we have a modified version in storage
       const mergedRecipes = INITIAL_RECIPES.map(r => {
           if (storedMap.has(r.id)) {
               const stored = storedMap.get(r.id);
-              storedMap.delete(r.id); // Remove processed items
+              storedMap.delete(r.id); 
               return stored!;
           }
           return r;
       });
       
-      // Add any remaining user-created recipes
       setRecipes([...mergedRecipes, ...Array.from(storedMap.values())]);
     } else {
       setRecipes(INITIAL_RECIPES);
@@ -674,8 +699,6 @@ const App: React.FC = () => {
   // Persist recipes whenever they change
   useEffect(() => {
      if (recipes.length > 0) {
-         // We save ALL recipes to local storage to persist edits to initial data as well
-         // In a real app with a backend, we'd only send diffs, but here we just overwrite local cache
          localStorage.setItem('shirleys_kitchen_recipes', JSON.stringify(recipes));
      }
   }, [recipes]);
@@ -697,16 +720,12 @@ const App: React.FC = () => {
     window.scrollTo(0,0);
   };
 
-  const handleCategorySelectFromIntro = (cat: Category) => {
-    setSelectedCategory(cat);
-    setView('list');
-    window.scrollTo(0,0);
-  };
-
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setView('detail');
     window.scrollTo(0,0);
+    setIsSearchFocused(false);
+    setSearchTerm('');
   };
 
   const handleAddRecipe = (newRecipe: Recipe) => {
@@ -722,7 +741,7 @@ const App: React.FC = () => {
   const handleUpdateRecipe = (updatedRecipe: Recipe) => {
     const updatedList = recipes.map(r => r.id === updatedRecipe.id ? updatedRecipe : r);
     setRecipes(updatedList);
-    setSelectedRecipe(updatedRecipe); // Update the detail view immediately
+    setSelectedRecipe(updatedRecipe);
     setEditingRecipe(null);
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
@@ -744,12 +763,19 @@ const App: React.FC = () => {
     });
   }, [recipes, searchTerm, selectedCategory, favorites]);
 
+  const searchSuggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return recipes
+      .filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      .slice(0, 5);
+  }, [recipes, searchTerm]);
+
   if (isPrinting) {
     return <PrintLayout recipes={recipes} onExit={() => setIsPrinting(false)} />;
   }
 
   if (view === 'intro') {
-    return <Intro onStart={handleStart} onSelectCategory={handleCategorySelectFromIntro} />;
+    return <Intro onStart={handleStart} />;
   }
 
   if (view === 'detail' && selectedRecipe) {
@@ -794,7 +820,6 @@ const App: React.FC = () => {
           </div>
 
           <nav className="space-y-2 flex-1 px-2">
-            {/* Main Nav Items with Glassmorphism */}
             <button 
                onClick={() => { setSelectedCategory('All'); setMobileMenuOpen(false); }}
                className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
@@ -882,7 +907,7 @@ const App: React.FC = () => {
                 </p>
              </div>
              
-             <div className="relative w-full md:w-96 group">
+             <div className="relative w-full md:w-96 group z-30">
                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                  <Search className="text-stone-400 group-hover:text-sky-500 transition-colors" size={20} />
                </div>
@@ -890,9 +915,35 @@ const App: React.FC = () => {
                  type="text" 
                  placeholder="Search recipes, ingredients..." 
                  value={searchTerm}
+                 onFocus={() => setIsSearchFocused(true)}
+                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                  onChange={(e) => setSearchTerm(e.target.value)}
-                 className="block w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl leading-5 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm group-hover:shadow-md"
+                 className="block w-full pl-12 pr-10 py-4 bg-white border border-stone-200 rounded-2xl leading-5 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm group-hover:shadow-md"
                />
+               {searchTerm && (
+                 <button 
+                   onClick={() => setSearchTerm('')}
+                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
+                 >
+                   <X size={16} />
+                 </button>
+               )}
+
+               {/* Search Suggestions */}
+               {isSearchFocused && searchTerm.trim() && searchSuggestions.length > 0 && (
+                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden animate-slide-up-fade">
+                   {searchSuggestions.map(suggestion => (
+                     <button
+                       key={suggestion.id}
+                       onMouseDown={() => handleRecipeClick(suggestion)}
+                       className="w-full text-left px-4 py-3 hover:bg-sky-50 transition-colors text-sm text-stone-700 flex items-center gap-2"
+                     >
+                       <Search size={14} className="text-stone-400" />
+                       {suggestion.title}
+                     </button>
+                   ))}
+                 </div>
+               )}
              </div>
           </div>
 
