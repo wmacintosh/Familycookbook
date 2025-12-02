@@ -1,3 +1,4 @@
+
 export interface Recipe {
   id: string;
   title: string;
@@ -12,6 +13,7 @@ export interface Recipe {
   addedBy: string; // "Nan" for original, or user name
   userColor?: string; // Hex code for user avatar/badge
   timestamp: number;
+  imageUrl?: string;
 }
 
 export enum Category {

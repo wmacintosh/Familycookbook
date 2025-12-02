@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee } from 'lucide-react';
+import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee, Image as ImageIcon, AlertTriangle, Download, Sparkles } from 'lucide-react';
 import { Recipe, Category, UserColorMap } from './types';
 import { INITIAL_RECIPES } from './data';
 
@@ -58,7 +59,7 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => (
       <div className="mb-8 flex justify-center">
         <div className="w-40 h-40 md:w-48 md:h-48 relative group perspective-1000">
            <img 
-             src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" 
+             src="https://i.imgur.com/imWxO8a.jpeg" 
              alt="MacIntosh Family Crest" 
              className="w-full h-full object-contain drop-shadow-2xl transform transition-transform duration-700 group-hover:rotate-y-12"
              onError={(e) => {
@@ -177,12 +178,19 @@ const RecipeCard: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: bo
       {/* Top accent line */}
       <div className="h-1.5 w-full bg-gradient-to-r from-sky-600 to-sky-400 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
       
+      {recipe.imageUrl && (
+        <div className="h-48 overflow-hidden relative">
+          <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
+        </div>
+      )}
+
       <div className="p-7 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <span className="text-[10px] font-bold tracking-widest text-sky-700 uppercase bg-sky-50/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-sky-100/50">{recipe.category}</span>
           <button 
             onClick={onToggleFavorite}
-            className={`p-2 rounded-full transition-all duration-300 z-10 ${isFavorite ? 'text-rose-600 bg-rose-50 shadow-inner' : 'text-stone-300 hover:text-rose-500 hover:bg-rose-50 hover:scale-110'}`}
+            className={`p-2 rounded-full transition-all duration-300 z-10 ${isFavorite ? 'text-rose-600 bg-rose-50 shadow-inner scale-110' : 'text-stone-300 hover:text-rose-500 hover:bg-rose-50 hover:scale-110'}`}
           >
             <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
           </button>
@@ -216,67 +224,200 @@ const RecipeCard: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: bo
   );
 };
 
-// --- New Category Card Component ---
+// --- Recipe List Item Component ---
+const RecipeListItem: React.FC<{ recipe: Recipe; onClick: () => void; isFavorite: boolean; onToggleFavorite: (e: React.MouseEvent) => void }> = ({ recipe, onClick, isFavorite, onToggleFavorite }) => {
+  const badgeColor = getAvatarColor(recipe.addedBy, recipe.userColor);
+
+  return (
+    <div 
+      onClick={onClick}
+      className="bg-white rounded-xl p-4 flex items-center gap-4 sm:gap-6 cursor-pointer hover:bg-sky-50/50 transition-all border border-stone-100 hover:border-sky-200 shadow-sm hover:shadow-md group animate-fade-in relative overflow-hidden"
+    >
+       {/* Avatar / User Indicator */}
+       <div className="flex-shrink-0 z-10 flex flex-col items-center gap-1" title={`Added by ${recipe.addedBy}`}>
+          <div 
+             className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white text-sm md:text-base font-bold shadow-sm ring-2 ring-offset-1 ring-stone-100 group-hover:ring-sky-100 transition-all"
+             style={{ backgroundColor: badgeColor }}
+           >
+             {recipe.addedBy.charAt(0).toUpperCase()}
+           </div>
+           {/* Visible name on tablet/desktop */}
+           <span className="hidden md:block text-[10px] font-bold text-stone-400 uppercase tracking-wider max-w-[60px] truncate text-center">{recipe.addedBy}</span>
+       </div>
+
+       {/* Content */}
+       <div className="flex-1 min-w-0 flex flex-col justify-center z-10 space-y-1">
+          <div className="flex items-baseline gap-3 flex-wrap">
+             <h3 className="font-serif text-lg md:text-xl font-bold text-stone-800 truncate group-hover:text-sky-700 transition-colors">{recipe.title}</h3>
+             <span className="text-[10px] font-bold tracking-widest text-sky-600 uppercase bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100 flex-shrink-0">{recipe.category}</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-stone-500">
+             {/* Mobile-only user indicator */}
+             <span className="md:hidden font-medium text-stone-400">by {recipe.addedBy}</span>
+             <span className="hidden md:inline truncate max-w-md">{recipe.description}</span>
+          </div>
+       </div>
+
+       {/* Meta (Time/Ingredients) - Responsive visibility */}
+       <div className="flex items-center gap-3 md:gap-6 text-stone-400 text-xs font-medium flex-shrink-0 z-10">
+          {(recipe.prepTime || recipe.cookTime) && (
+            <span className="hidden sm:flex items-center gap-1.5 bg-stone-50 px-2.5 py-1.5 rounded-lg border border-stone-100">
+              <Clock size={14} className="text-stone-400"/> 
+              {recipe.cookTime || recipe.prepTime}
+            </span>
+          )}
+          <span className="hidden sm:flex items-center gap-1.5 bg-stone-50 px-2.5 py-1.5 rounded-lg border border-stone-100">
+            <UtensilsCrossed size={14} className="text-stone-400"/> 
+            {recipe.ingredients.length}
+          </span>
+       </div>
+
+       {/* Favorite Button - Enhanced */}
+       <button 
+        onClick={onToggleFavorite}
+        className={`p-3 rounded-full transition-all duration-300 flex-shrink-0 z-20 border ml-2 ${
+          isFavorite 
+            ? 'text-rose-600 bg-rose-50 border-rose-200 scale-110 shadow-sm' 
+            : 'text-stone-300 border-transparent hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 hover:scale-110 hover:shadow-sm'
+        }`}
+        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Heart size={20} fill={isFavorite ? "currentColor" : "none"} strokeWidth={isFavorite ? 0 : 2} />
+      </button>
+    </div>
+  );
+};
+
+// --- Category Card Component ---
 const CategoryCard: React.FC<{ category: Category; count: number; onClick: () => void }> = ({ category, count, onClick }) => {
   const getIcon = (cat: Category) => {
     switch(cat) {
-      case Category.APPETIZERS: return <Pizza className="text-amber-600" size={32} />;
-      case Category.SOUPS_SALADS: return <Soup className="text-emerald-600" size={32} />;
-      case Category.BREADS_MUFFINS: return <Croissant className="text-orange-600" size={32} />;
-      case Category.MAIN_DISHES: return <UtensilsCrossed className="text-rose-600" size={32} />;
-      case Category.SIDE_DISHES: return <Leaf className="text-lime-600" size={32} />;
-      case Category.DESSERTS: return <Cake className="text-pink-600" size={32} />;
-      case Category.SAUCES: return <Droplet className="text-sky-600" size={32} />;
-      default: return <UtensilsCrossed className="text-stone-600" size={32} />;
+      case Category.APPETIZERS: return <Pizza size={32} />;
+      case Category.SOUPS_SALADS: return <Soup size={32} />;
+      case Category.BREADS_MUFFINS: return <Croissant size={32} />;
+      case Category.MAIN_DISHES: return <UtensilsCrossed size={32} />;
+      case Category.SIDE_DISHES: return <Leaf size={32} />;
+      case Category.DESSERTS: return <Cake size={32} />;
+      case Category.SAUCES: return <Droplet size={32} />;
+      default: return <UtensilsCrossed size={32} />;
     }
   };
 
   const getGradient = (cat: Category) => {
     switch(cat) {
-      case Category.APPETIZERS: return "from-amber-50 to-amber-100/50 hover:to-amber-100";
-      case Category.SOUPS_SALADS: return "from-emerald-50 to-emerald-100/50 hover:to-emerald-100";
-      case Category.BREADS_MUFFINS: return "from-orange-50 to-orange-100/50 hover:to-orange-100";
-      case Category.MAIN_DISHES: return "from-rose-50 to-rose-100/50 hover:to-rose-100";
-      case Category.SIDE_DISHES: return "from-lime-50 to-lime-100/50 hover:to-lime-100";
-      case Category.DESSERTS: return "from-pink-50 to-pink-100/50 hover:to-pink-100";
-      case Category.SAUCES: return "from-sky-50 to-sky-100/50 hover:to-sky-100";
-      default: return "from-stone-50 to-stone-100/50 hover:to-stone-100";
+      case Category.APPETIZERS: return "from-amber-50 to-amber-100/50 hover:to-amber-100 text-amber-700";
+      case Category.SOUPS_SALADS: return "from-emerald-50 to-emerald-100/50 hover:to-emerald-100 text-emerald-700";
+      case Category.BREADS_MUFFINS: return "from-orange-50 to-orange-100/50 hover:to-orange-100 text-orange-700";
+      case Category.MAIN_DISHES: return "from-rose-50 to-rose-100/50 hover:to-rose-100 text-rose-700";
+      case Category.SIDE_DISHES: return "from-lime-50 to-lime-100/50 hover:to-lime-100 text-lime-700";
+      case Category.DESSERTS: return "from-pink-50 to-pink-100/50 hover:to-pink-100 text-pink-700";
+      case Category.SAUCES: return "from-sky-50 to-sky-100/50 hover:to-sky-100 text-sky-700";
+      default: return "from-stone-50 to-stone-100/50 hover:to-stone-100 text-stone-700";
     }
   };
 
   return (
     <button 
       onClick={onClick}
-      className={`group relative p-8 rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-gradient-to-br ${getGradient(category)} flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1`}
+      className={`group relative p-8 h-64 rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-2xl transition-all duration-500 bg-gradient-to-br ${getGradient(category)} flex flex-col items-center justify-center text-center gap-6 hover:-translate-y-2 overflow-hidden`}
     >
-      <div className="bg-white p-4 rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 ring-4 ring-white/50">
+      <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-1/4 -translate-y-1/4 group-hover:scale-150 transition-transform duration-700 pointer-events-none">
+        <div className="scale-150">{getIcon(category)}</div>
+      </div>
+      
+      <div className="bg-white p-5 rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 ring-4 ring-white/50 relative z-10 text-current">
         {getIcon(category)}
       </div>
-      <div>
-        <h3 className="font-serif text-xl font-bold text-stone-800 mb-1">{category}</h3>
-        <p className="text-xs font-bold uppercase tracking-widest text-stone-500 group-hover:text-stone-700 transition-colors">
-          {count} {count === 1 ? 'Recipe' : 'Recipes'}
-        </p>
+      
+      <div className="relative z-10 text-stone-800">
+        <h3 className="font-serif text-2xl font-bold mb-2 leading-tight">{category}</h3>
+        <span className="inline-block px-3 py-1 bg-white/60 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-widest text-stone-600 group-hover:bg-white group-hover:text-stone-800 transition-colors">
+          {count} Recipes
+        </span>
       </div>
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
-        <ChevronRight className="text-stone-400" size={20} />
+      
+      <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 text-stone-400">
+        <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-1">Browse Category <ChevronRight size={14}/></span>
       </div>
     </button>
   );
 };
 
-const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: boolean; onToggleFavorite: () => void; onEdit: () => void }> = ({ recipe, onBack, isFavorite, onToggleFavorite, onEdit }) => {
+const DeleteConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void; onConfirm: () => void; recipeTitle: string }> = ({ isOpen, onClose, onConfirm, recipeTitle }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full transform transition-all animate-scale-in border border-red-100">
+        <div className="flex flex-col items-center text-center">
+          <div className="bg-red-100 p-4 rounded-full mb-4 text-red-500 shadow-inner">
+            <AlertTriangle size={32} />
+          </div>
+          <h3 className="font-serif text-2xl font-bold text-stone-900 mb-2">Delete Recipe?</h3>
+          <p className="text-stone-500 mb-8 leading-relaxed">
+            Are you sure you want to permanently delete <span className="font-bold text-stone-800">"{recipeTitle}"</span>? <br/>This action cannot be undone.
+          </p>
+          <div className="flex gap-4 w-full">
+            <button 
+              onClick={onClose}
+              className="flex-1 px-6 py-3.5 rounded-xl text-stone-600 font-bold hover:bg-stone-100 transition-colors border border-stone-200"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={onConfirm}
+              className="flex-1 px-6 py-3.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-colors flex items-center justify-center gap-2"
+            >
+              <Trash2 size={18} /> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecipeDetail: React.FC<{ 
+  recipe: Recipe; 
+  onBack: () => void; 
+  isFavorite: boolean; 
+  onToggleFavorite: () => void; 
+  onEdit: () => void;
+  onDelete: () => void;
+  onUpdateRecipe: (recipe: Recipe) => void;
+}> = ({ recipe, onBack, isFavorite, onToggleFavorite, onEdit, onDelete, onUpdateRecipe }) => {
   const [tips, setTips] = useState<string | null>(null);
+  const [variations, setVariations] = useState<string | null>(null);
+  
   const [loadingTips, setLoadingTips] = useState(false);
+  const [loadingVariations, setLoadingVariations] = useState(false);
+  
   const [errorTips, setErrorTips] = useState<string | null>(null);
+  const [errorVariations, setErrorVariations] = useState<string | null>(null);
+  
+  // Which AI content to show: 'tips' | 'variations' | null
+  const [activeAiTab, setActiveAiTab] = useState<'tips' | 'variations' | null>(null);
+
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [imageError, setImageError] = useState<string | null>(null);
+  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const badgeColor = getAvatarColor(recipe.addedBy, recipe.userColor);
 
-  // Reset tips when recipe changes
+  // Reset states when recipe changes
   useEffect(() => {
     setTips(null);
+    setVariations(null);
     setErrorTips(null);
+    setErrorVariations(null);
     setLoadingTips(false);
+    setLoadingVariations(false);
+    setActiveAiTab(null);
+    setImageError(null);
+    setIsGeneratingImage(false);
   }, [recipe.id]);
 
   const handleShare = async () => {
@@ -293,7 +434,6 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
         console.error('Error sharing:', err);
       }
     } else {
-      // Fallback for browsers that don't support Web Share API
       const text = `${recipe.title}\n\n${recipe.description || ''}\n\nIngredients:\n${recipe.ingredients.join('\n')}\n\nInstructions:\n${recipe.instructions.join('\n')}`;
       navigator.clipboard.writeText(text);
       alert('Recipe copied to clipboard!');
@@ -301,6 +441,9 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
   };
 
   const getGeminiTips = async () => {
+    setActiveAiTab('tips');
+    if (tips) return; // Already loaded
+
     if (!process.env.API_KEY) {
       setErrorTips("API Key is missing.");
       return;
@@ -337,18 +480,126 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
       setLoadingTips(false);
     }
   };
+  
+  const getVariations = async () => {
+    setActiveAiTab('variations');
+    if (variations) return; // Already loaded
+
+    if (!process.env.API_KEY) {
+      setErrorVariations("API Key is missing.");
+      return;
+    }
+
+    setLoadingVariations(true);
+    setErrorVariations(null);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `
+        You are a creative culinary expert. Based on the following recipe, suggest:
+        1. Two creative flavor variations (twists on the original).
+        2. Two common dietary substitutions (e.g., gluten-free, dairy-free options) if applicable.
+
+        Recipe: ${recipe.title}
+        Ingredients: ${recipe.ingredients.join(', ')}
+        Instructions: ${recipe.instructions.join(', ')}
+
+        Keep the suggestions concise and practical. Use bullet points.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+
+      setVariations(response.text || "No variations generated.");
+    } catch (e) {
+      console.error(e);
+      setErrorVariations("Could not generate variations right now. Please try again later.");
+    } finally {
+      setLoadingVariations(false);
+    }
+  };
+
+  const generateImage = async () => {
+    if (!process.env.API_KEY) {
+      setImageError("API Key is missing.");
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setImageError(null);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `Professional food photography of ${recipe.title}. ${recipe.description || ''}. The image should be appetizing, high resolution, with soft natural lighting and elegant plating suitable for a family cookbook.`;
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: {
+          parts: [{ text: prompt }],
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: "16:9",
+            imageSize: imageSize
+          }
+        },
+      });
+
+      // Find the image part in the response
+      let base64Image: string | undefined;
+      
+      if (response.candidates && response.candidates[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            base64Image = part.inlineData.data;
+            break;
+          }
+        }
+      }
+
+      if (base64Image) {
+        const imageUrl = `data:image/png;base64,${base64Image}`;
+        // Update recipe with new image
+        const updatedRecipe = { ...recipe, imageUrl };
+        onUpdateRecipe(updatedRecipe);
+      } else {
+        setImageError("No image generated. Please try again.");
+      }
+      
+    } catch (e) {
+      console.error(e);
+      setImageError("Failed to generate image. Please try again.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto bg-white min-h-[85vh] shadow-2xl rounded-none md:rounded-2xl overflow-hidden flex flex-col relative animate-fade-in print:shadow-none print:h-auto border border-white/50 ring-1 ring-stone-200/50">
+      <DeleteConfirmationModal 
+        isOpen={showDeleteConfirm} 
+        onClose={() => setShowDeleteConfirm(false)} 
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDelete();
+        }}
+        recipeTitle={recipe.title}
+      />
+
       {/* Header Controls */}
       <div className="absolute top-4 left-4 z-20 print:hidden">
         <button onClick={onBack} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all group">
-          <X size={24} className="text-stone-600 group-hover:text-stone-900" />
+          <ArrowLeft size={24} className="text-stone-600 group-hover:text-stone-900" />
         </button>
       </div>
       <div className="absolute top-4 right-4 z-20 flex gap-2 print:hidden">
         <button onClick={onEdit} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all text-stone-600" title="Edit Recipe">
           <Edit2 size={24} />
+        </button>
+        <button onClick={() => setShowDeleteConfirm(true)} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-red-50 hover:text-red-500 hover:scale-105 transition-all text-stone-600" title="Delete Recipe">
+          <Trash2 size={24} />
         </button>
         <button onClick={handleShare} className="bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-lg border border-white/50 hover:bg-white hover:scale-105 transition-all text-stone-600" title="Share Recipe">
           <Share2 size={24} />
@@ -365,47 +616,55 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
       </div>
 
       {/* Hero Section */}
-      <div className="bg-sky-50 p-8 md:p-16 text-center relative overflow-hidden print:bg-white print:p-0 print:border-b-2 print:border-black print:mb-8">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/food.png')] pointer-events-none"></div>
+      <div className={`bg-sky-50 text-center relative overflow-hidden print:bg-white print:p-0 print:border-b-2 print:border-black print:mb-8 transition-all duration-500 ${recipe.imageUrl ? 'h-[400px] md:h-[500px]' : 'p-8 md:p-16'}`}>
+        {recipe.imageUrl ? (
+           <div className="absolute inset-0 z-0">
+             <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
+             <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-stone-900/20 to-transparent"></div>
+           </div>
+        ) : (
+           <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/food.png')] pointer-events-none"></div>
+        )}
         
-        <div className="relative z-10">
-          <span className="inline-block px-4 py-1.5 rounded-full border border-sky-200/60 text-sky-700 font-serif italic text-sm md:text-base mb-6 bg-white/60 backdrop-blur-sm shadow-sm print:hidden">
+        <div className={`relative z-10 flex flex-col items-center justify-center h-full ${recipe.imageUrl ? 'text-white justify-end pb-12' : 'text-stone-800'}`}>
+          <span className={`inline-block px-4 py-1.5 rounded-full border font-serif italic text-sm md:text-base mb-4 backdrop-blur-sm shadow-sm print:hidden ${recipe.imageUrl ? 'bg-black/30 border-white/20 text-white' : 'border-sky-200/60 text-sky-700 bg-white/60'}`}>
             {recipe.category}
           </span>
-          <h2 className="font-serif text-4xl md:text-6xl font-bold mt-2 mb-6 text-stone-800 print:text-black drop-shadow-sm">{recipe.title}</h2>
-          {recipe.description && <p className="text-stone-500 text-lg md:text-xl italic font-serif max-w-2xl mx-auto leading-relaxed print:text-stone-600">"{recipe.description}"</p>}
+          <h2 className={`font-serif text-4xl md:text-6xl font-bold mb-4 print:text-black drop-shadow-sm max-w-4xl leading-tight ${recipe.imageUrl ? 'text-white text-shadow-lg' : 'text-stone-800'}`}>{recipe.title}</h2>
+          {recipe.description && <p className={`text-lg md:text-xl italic font-serif max-w-2xl mx-auto leading-relaxed print:text-stone-600 ${recipe.imageUrl ? 'text-stone-200' : 'text-stone-500'}`}>"{recipe.description}"</p>}
           
-          <div className="flex flex-wrap justify-center gap-6 md:gap-12 mt-10 text-sm md:text-base text-stone-600 font-light print:text-stone-800">
+          {/* Metadata Badges */}
+          <div className={`flex flex-wrap justify-center gap-4 md:gap-8 mt-8 text-sm font-light print:text-stone-800 ${recipe.imageUrl ? 'text-white' : 'text-stone-600'}`}>
              {recipe.prepTime && (
-               <div className="flex flex-col items-center px-4 py-2 rounded-xl bg-white/50 border border-stone-100 shadow-sm print:shadow-none print:border-0">
-                 <span className="text-sky-700 font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black">Prep</span>
+               <div className={`flex flex-col items-center px-4 py-2 rounded-xl border shadow-sm backdrop-blur-md print:shadow-none print:border-0 ${recipe.imageUrl ? 'bg-black/30 border-white/10' : 'bg-white/50 border-stone-100'}`}>
+                 <span className={`font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black ${recipe.imageUrl ? 'text-sky-200' : 'text-sky-700'}`}>Prep</span>
                  <span className="font-medium">{recipe.prepTime}</span>
                </div>
              )}
              {recipe.cookTime && (
-               <div className="flex flex-col items-center px-4 py-2 rounded-xl bg-white/50 border border-stone-100 shadow-sm print:shadow-none print:border-0">
-                 <span className="text-sky-700 font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black">Cook</span>
+               <div className={`flex flex-col items-center px-4 py-2 rounded-xl border shadow-sm backdrop-blur-md print:shadow-none print:border-0 ${recipe.imageUrl ? 'bg-black/30 border-white/10' : 'bg-white/50 border-stone-100'}`}>
+                 <span className={`font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black ${recipe.imageUrl ? 'text-sky-200' : 'text-sky-700'}`}>Cook</span>
                  <span className="font-medium">{recipe.cookTime}</span>
                </div>
              )}
              {recipe.temp && (
-               <div className="flex flex-col items-center px-4 py-2 rounded-xl bg-white/50 border border-stone-100 shadow-sm print:shadow-none print:border-0">
-                 <span className="text-sky-700 font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black">Temp</span>
+               <div className={`flex flex-col items-center px-4 py-2 rounded-xl border shadow-sm backdrop-blur-md print:shadow-none print:border-0 ${recipe.imageUrl ? 'bg-black/30 border-white/10' : 'bg-white/50 border-stone-100'}`}>
+                 <span className={`font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black ${recipe.imageUrl ? 'text-sky-200' : 'text-sky-700'}`}>Temp</span>
                  <span className="font-medium">{recipe.temp}</span>
                </div>
              )}
              {recipe.yields && (
-               <div className="flex flex-col items-center px-4 py-2 rounded-xl bg-white/50 border border-stone-100 shadow-sm print:shadow-none print:border-0">
-                 <span className="text-sky-700 font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black">Yields</span>
+               <div className={`flex flex-col items-center px-4 py-2 rounded-xl border shadow-sm backdrop-blur-md print:shadow-none print:border-0 ${recipe.imageUrl ? 'bg-black/30 border-white/10' : 'bg-white/50 border-stone-100'}`}>
+                 <span className={`font-bold uppercase text-[10px] tracking-widest mb-1 print:text-black ${recipe.imageUrl ? 'text-sky-200' : 'text-sky-700'}`}>Yields</span>
                  <span className="font-medium">{recipe.yields}</span>
                </div>
              )}
           </div>
 
-          <div className="mt-10 pt-8 border-t border-stone-200/60 flex justify-center items-center gap-3 print:border-stone-200">
-            <span className="text-xs uppercase tracking-widest text-stone-400 font-bold">Recipe Source</span>
-            <span className="pl-2 pr-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 bg-white shadow-sm text-stone-600 border border-stone-100 print:bg-transparent print:text-black print:border print:border-black">
+          {/* Added By Badge */}
+          <div className={`mt-8 pt-6 border-t flex justify-center items-center gap-3 print:border-stone-200 ${recipe.imageUrl ? 'border-white/20' : 'border-stone-200/60'}`}>
+            <span className={`text-xs uppercase tracking-widest font-bold ${recipe.imageUrl ? 'text-stone-300' : 'text-stone-400'}`}>Recipe Source</span>
+            <span className={`pl-2 pr-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm border print:bg-transparent print:text-black print:border print:border-black ${recipe.imageUrl ? 'bg-black/40 border-white/10 text-white' : 'bg-white border-stone-100 text-stone-600'}`}>
                <div 
                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner"
                  style={{ backgroundColor: badgeColor }}
@@ -432,6 +691,47 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
               </li>
             ))}
           </ul>
+
+          {/* Image Generation Controls (Desktop) - Hidden in Print */}
+          <div className="mt-12 p-6 bg-stone-50 rounded-2xl border border-stone-100 print:hidden">
+            <h4 className="font-bold text-stone-700 mb-4 flex items-center gap-2">
+              <ImageIcon size={18} className="text-sky-600" />
+              {recipe.imageUrl ? "Update Photo" : "Generate Photo"}
+            </h4>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-stone-200">
+                {(['1K', '2K', '4K'] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setImageSize(size)}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${imageSize === size ? 'bg-sky-100 text-sky-700 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={generateImage}
+                disabled={isGeneratingImage}
+                className={`w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-all flex items-center justify-center gap-2 ${isGeneratingImage ? 'bg-stone-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 hover:shadow-sky-200'}`}
+              >
+                {isGeneratingImage ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Creating Magic...
+                  </>
+                ) : (
+                  <>
+                    <ChefHat size={16} />
+                    {recipe.imageUrl ? "Regenerate Photo" : "Create Photo"}
+                  </>
+                )}
+              </button>
+              {imageError && <p className="text-xs text-rose-500 mt-2 text-center">{imageError}</p>}
+              <p className="text-[10px] text-stone-400 text-center mt-1">Powered by Gemini 3 Pro</p>
+            </div>
+          </div>
+
         </div>
 
         {/* Instructions Column */}
@@ -469,34 +769,74 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; isFavorite: b
                   </div>
                 </div>
                 
-                {!tips && !loadingTips && (
-                  <div className="text-left">
-                      <p className="text-stone-600 mb-8 text-base leading-relaxed max-w-2xl">
-                        Want to make this recipe even better? I can suggest substitutions, serving ideas, or technique tips specifically for this dish.
+                {/* Button Controls */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                   <button 
+                     onClick={getGeminiTips}
+                     disabled={loadingTips || loadingVariations}
+                     className={`px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all shadow-sm border ${activeAiTab === 'tips' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-sky-800 border-sky-200 hover:bg-sky-50'}`}
+                   >
+                      {loadingTips ? (
+                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                         <ChefHat size={18} />
+                      )}
+                      <span>Chef's Tips</span>
+                   </button>
+
+                   <button 
+                     onClick={getVariations}
+                     disabled={loadingTips || loadingVariations}
+                     className={`px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all shadow-sm border ${activeAiTab === 'variations' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50'}`}
+                   >
+                      {loadingVariations ? (
+                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                         <Sparkles size={18} />
+                      )}
+                      <span>Substitutions & Variations</span>
+                   </button>
+                </div>
+                
+                {/* Content Area */}
+                <div className="min-h-[100px]">
+                   {/* Default State */}
+                   {!activeAiTab && (
+                      <p className="text-stone-600 text-base leading-relaxed max-w-2xl italic">
+                        Select an option above to get personalized advice, substitutions, or creative twists for this recipe.
                       </p>
-                      <button 
-                        onClick={getGeminiTips}
-                        className="bg-white border border-sky-200 text-sky-800 px-8 py-4 rounded-xl hover:bg-sky-600 hover:text-white transition-all shadow-sm hover:shadow-lg font-medium flex items-center gap-3 group"
-                      >
-                        <span className="font-bold tracking-wide">Reveal Chef's Tips</span>
-                        <ChefHat size={18} className="group-hover:rotate-12 transition-transform" />
-                      </button>
-                      {errorTips && <p className="text-red-500 text-sm mt-4 bg-red-50 p-3 rounded border border-red-100">{errorTips}</p>}
-                  </div>
-                )}
+                   )}
 
-                {loadingTips && (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-sky-100 border-t-sky-600 mb-6"></div>
-                    <p className="text-stone-500 font-serif italic text-lg animate-pulse">Consulting the cookbook...</p>
-                  </div>
-                )}
+                   {/* Error Messages */}
+                   {(errorTips || errorVariations) && (
+                     <p className="text-red-500 text-sm bg-red-50 p-3 rounded border border-red-100">
+                       {activeAiTab === 'tips' ? errorTips : errorVariations}
+                     </p>
+                   )}
 
-                {tips && (
-                  <div className="prose prose-stone text-stone-700 bg-white/80 p-8 rounded-2xl border border-sky-100/50 backdrop-blur-sm shadow-sm">
-                      <div className="whitespace-pre-line leading-relaxed italic font-serif text-lg">{tips}</div>
-                  </div>
-                )}
+                   {/* Loading State */}
+                   {(loadingTips || loadingVariations) && (
+                     <div className="flex flex-col items-center justify-center py-8 text-stone-400">
+                        <div className="animate-spin rounded-full h-8 w-8 border-4 border-stone-200 border-t-sky-500 mb-3"></div>
+                        <p className="font-serif italic text-sm">Consulting the cookbook...</p>
+                     </div>
+                   )}
+
+                   {/* Display Content */}
+                   {activeAiTab === 'tips' && tips && (
+                      <div className="prose prose-stone text-stone-700 bg-white/80 p-6 rounded-2xl border border-sky-100/50 backdrop-blur-sm shadow-sm animate-fade-in">
+                        <h5 className="font-bold text-sky-800 mb-2 text-sm uppercase tracking-wider">Chef's Tips</h5>
+                        <div className="whitespace-pre-line leading-relaxed">{tips}</div>
+                      </div>
+                   )}
+
+                   {activeAiTab === 'variations' && variations && (
+                      <div className="prose prose-stone text-stone-700 bg-white/80 p-6 rounded-2xl border border-emerald-100/50 backdrop-blur-sm shadow-sm animate-fade-in">
+                        <h5 className="font-bold text-emerald-800 mb-2 text-sm uppercase tracking-wider">Variations & Substitutions</h5>
+                        <div className="whitespace-pre-line leading-relaxed">{variations}</div>
+                      </div>
+                   )}
+                </div>
              </div>
           </div>
         </div>
@@ -533,7 +873,7 @@ const DynamicListInput: React.FC<{ items: string[]; onChange: (items: string[]) 
           value={current} 
           onChange={e => setCurrent(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 border border-stone-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-stone-50 focus:bg-white transition-all"
+          className="flex-1 border border-stone-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white focus:bg-white transition-all text-stone-900 placeholder:text-stone-400"
           placeholder={placeholder}
         />
         <button type="button" onClick={add} className="bg-stone-100 hover:bg-stone-200 text-stone-600 p-3 rounded-xl transition-colors shadow-sm">
@@ -567,6 +907,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
   const [userColor, setUserColor] = useState(initialData?.userColor || '');
   const [yields, setYields] = useState(initialData?.yields || '');
   const [prepTime, setPrepTime] = useState(initialData?.prepTime || '');
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
 
   // Pre-select color based on name if editing or if user typed name
   useEffect(() => {
@@ -606,7 +947,8 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
       prepTime: prepTime || undefined,
       yields: yields || undefined,
       userColor: userColor || getAvatarColor(addedBy),
-      timestamp: initialData?.timestamp || Date.now()
+      timestamp: initialData?.timestamp || Date.now(),
+      imageUrl: imageUrl || undefined
     };
     onSave(newRecipe);
   };
@@ -626,12 +968,12 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Recipe Title <span className="text-rose-500">*</span></label>
-              <input required value={title} onChange={e => setTitle(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all shadow-sm" placeholder="e.g. Aunt Jean's Brownies" />
+              <input required value={title} onChange={e => setTitle(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="e.g. Aunt Jean's Brownies" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Category</label>
               <div className="relative">
-                <select value={category} onChange={e => setCategory(e.target.value as Category)} className="w-full border border-stone-200 rounded-xl p-3.5 bg-white focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all cursor-pointer shadow-sm appearance-none">
+                <select value={category} onChange={e => setCategory(e.target.value as Category)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all cursor-pointer shadow-sm appearance-none bg-white text-stone-900">
                   {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <div className="absolute right-4 top-4 pointer-events-none text-stone-400">
@@ -643,32 +985,32 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
 
           <div>
             <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Description / Memories</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all shadow-sm" rows={3} placeholder="A short description or memory about this dish..." />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all shadow-sm bg-white text-stone-900 placeholder:text-stone-400" rows={3} placeholder="A short description or memory about this dish..." />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
              <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Prep Time</label>
-              <input value={prepTime} onChange={e => setPrepTime(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="e.g. 15 mins" />
+              <input value={prepTime} onChange={e => setPrepTime(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="e.g. 15 mins" />
             </div>
              <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Cook Time</label>
-              <input value={cookTime} onChange={e => setCookTime(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="e.g. 45 mins" />
+              <input value={cookTime} onChange={e => setCookTime(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="e.g. 45 mins" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Oven Temp</label>
-              <input value={temp} onChange={e => setTemp(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="e.g. 350°F" />
+              <input value={temp} onChange={e => setTemp(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="e.g. 350°F" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Yields</label>
-              <input value={yields} onChange={e => setYields(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="e.g. 12 servings" />
+              <input value={yields} onChange={e => setYields(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="e.g. 12 servings" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Recipe Owner <span className="text-rose-500">*</span></label>
-              <input required value={addedBy} onChange={handleNameChange} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="Who is adding this?" />
+              <input required value={addedBy} onChange={handleNameChange} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm bg-white text-stone-900 placeholder:text-stone-400" placeholder="Who is adding this?" />
             </div>
             <div className="md:col-span-2 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
               <label className="block text-xs font-bold uppercase text-stone-500 mb-4 flex items-center gap-2 tracking-wider"><Palette size={14}/> Owner Avatar Color</label>
@@ -715,6 +1057,7 @@ const RecipeModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => v
 
 const App: React.FC = () => {
   const [view, setView] = useState<'intro' | 'categories' | 'list' | 'detail'>('intro');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   const [isPrinting, setIsPrinting] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -728,7 +1071,6 @@ const App: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   
-  // New state for mobile category view navigation
   const [mobileView, setMobileView] = useState<'categories' | 'recipes'>('categories');
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -826,10 +1168,22 @@ const App: React.FC = () => {
     setRecipes(updatedList);
     setSelectedRecipe(updatedRecipe);
     setEditingRecipe(null);
+    setShowAddModal(false);
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
   }
   
+  const handleDeleteRecipe = () => {
+    if (selectedRecipe) {
+      const updatedList = recipes.filter(r => r.id !== selectedRecipe.id);
+      setRecipes(updatedList);
+      setSelectedRecipe(null);
+      setView('list');
+      setShowSuccessToast(true); // Reusing success toast for deletion confirmation visually
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    }
+  }
+
   const handleSearchChange = (value: string) => {
       setSearchTerm(value);
       setActiveSuggestion(-1);
@@ -886,283 +1240,322 @@ const App: React.FC = () => {
       }
   };
 
-  const getCategoryCount = (cat: Category) => recipes.filter(r => r.category === cat).length;
-
-  if (isPrinting) {
-    return <PrintLayout recipes={recipes} onExit={() => setIsPrinting(false)} />;
-  }
-
-  if (view === 'intro') {
-    return <Intro onStart={handleStart} />;
-  }
-
-  if (view === 'detail' && selectedRecipe) {
-    return (
-      <div className="bg-sky-50 min-h-screen p-4 md:p-8 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-sky-100 via-sky-50 to-sky-100">
-        <RecipeDetail 
-          recipe={selectedRecipe} 
-          onBack={() => setView('list')} 
-          isFavorite={favorites.includes(selectedRecipe.id)}
-          onToggleFavorite={() => toggleFavorite({ stopPropagation: () => {} } as any, selectedRecipe.id)}
-          onEdit={() => setEditingRecipe(selectedRecipe)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-sky-50 font-sans text-stone-800">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-white/90 backdrop-blur-md text-stone-800 p-4 flex justify-between items-center sticky top-0 z-30 shadow-sm border-b border-stone-200">
-        <h1 className="font-serif text-xl">Shirley's Kitchen</h1>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X /> : <Menu />}
-        </button>
-      </div>
+    <div className="min-h-screen bg-stone-50 font-sans text-stone-900 selection:bg-sky-100 selection:text-sky-900">
+      {/* Print View */}
+      {isPrinting && <PrintLayout recipes={filteredRecipes} onExit={() => setIsPrinting(false)} />}
 
-      {/* Sidebar Navigation */}
-      <aside className={`
-        fixed inset-0 z-20 w-80 transform transition-transform duration-300 ease-in-out shadow-2xl border-r border-sky-200/50
-        md:relative md:translate-x-0 md:block md:shadow-none
-        bg-gradient-to-b from-sky-50 via-white to-sky-50
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="p-6 h-full flex flex-col overflow-y-auto custom-scrollbar">
-          <div className="hidden md:block mb-8 text-center cursor-pointer group" onClick={() => setView('intro')}>
-             <div className="w-20 h-20 mx-auto bg-white rounded-full border-4 border-white shadow-lg mb-4 flex items-center justify-center text-sky-700 group-hover:scale-105 transition-transform overflow-hidden">
-               {/* Small Crest in Sidebar */}
-               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" className="w-full h-full object-cover" alt="Crest" />
+      {/* Intro View */}
+      {view === 'intro' && !isPrinting && <Intro onStart={handleStart} />}
+
+      {/* Main App View */}
+      {view !== 'intro' && !isPrinting && (
+        <div className="flex h-screen overflow-hidden">
+          {/* Sidebar - Desktop */}
+          <aside className="hidden md:flex w-64 flex-col bg-stone-900 text-stone-300 border-r border-stone-800 z-20 shadow-xl">
+             {/* Logo/Header */}
+             <div className="p-6 border-b border-stone-800">
+                <h1 className="font-serif text-2xl text-stone-100 mb-1">Shirley’s Kitchen</h1>
+                <p className="text-xs text-stone-500 uppercase tracking-widest">Family Cookbook</p>
              </div>
-             <h1 className="font-serif text-2xl text-stone-800 tracking-wide drop-shadow-sm">Shirley's Kitchen</h1>
-             <p className="text-[10px] text-stone-400 mt-1 uppercase tracking-widest font-bold">Est. 2023</p>
-          </div>
 
-          <nav className="space-y-2 flex-1 px-2">
-            {/* New Home Button for Categories View */}
-             <button 
-               onClick={() => { setView('categories'); setMobileMenuOpen(false); setSearchTerm(''); }}
-               className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
-                 ${view === 'categories'
-                   ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-sky-800 border border-white/60 font-bold' 
-                   : 'text-stone-600 hover:bg-white/40 hover:text-sky-700 hover:shadow-sm'}`}
-            >
-              <div className={`p-1.5 rounded-lg transition-colors ${view === 'categories' ? 'bg-sky-100 text-sky-700' : 'bg-sky-50 group-hover:bg-white'}`}>
-                <LayoutGrid size={18} />
-              </div>
-              <span className="relative z-10">Categories</span>
-            </button>
-
-            <button 
-               onClick={() => { setSelectedCategory('All'); setView('list'); setMobileMenuOpen(false); }}
-               className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
-                 ${view === 'list' && selectedCategory === 'All' 
-                   ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-sky-800 border border-white/60 font-bold' 
-                   : 'text-stone-600 hover:bg-white/40 hover:text-sky-700 hover:shadow-sm'}`}
-            >
-              <div className={`p-1.5 rounded-lg transition-colors ${view === 'list' && selectedCategory === 'All' ? 'bg-sky-100 text-sky-700' : 'bg-sky-50 group-hover:bg-white'}`}>
-                <List size={18} />
-              </div>
-              <span className="relative z-10">All Recipes</span>
-            </button>
-
-            <button 
-               onClick={() => { setSelectedCategory('Favorites'); setView('list'); setMobileMenuOpen(false); }}
-               className={`w-full text-left px-4 py-3.5 rounded-2xl transition-all duration-300 flex items-center gap-3 group relative overflow-hidden
-                 ${selectedCategory === 'Favorites' 
-                   ? 'bg-white/80 backdrop-blur-md shadow-[0_8px_16px_rgb(0,0,0,0.04)] text-rose-800 border border-white/60 font-bold' 
-                   : 'text-stone-600 hover:bg-white/40 hover:text-rose-700 hover:shadow-sm'}`}
-            >
-              <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === 'Favorites' ? 'bg-rose-100 text-rose-600' : 'bg-sky-50 group-hover:bg-white'}`}>
-                <Heart size={18} className={selectedCategory === 'Favorites' ? 'fill-current' : ''} />
-              </div>
-              <span className="relative z-10">Favorites</span>
-            </button>
-
-            <div className="pt-8 pb-3 pl-4">
-              <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
-                <div className="h-px w-4 bg-stone-300"></div>
-                Categories
-              </h3>
-            </div>
-            
-            <div className="space-y-1">
-              {Object.values(Category).map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => handleCategorySelect(cat)}
-                  className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-between group
-                    ${selectedCategory === cat && view === 'list'
-                      ? 'bg-white shadow-sm text-sky-700 font-bold border border-stone-100 translate-x-1' 
-                      : 'text-stone-500 hover:text-sky-600 hover:bg-white/50'}`}
+             {/* Navigation */}
+             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+                <button 
+                  onClick={() => { setView('categories'); setSelectedCategory('All'); setSearchTerm(''); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === 'categories' ? 'bg-sky-900/50 text-white shadow-inner border border-sky-800/50' : 'hover:bg-stone-800 hover:text-white'}`}
                 >
-                  <span>{cat}</span>
-                  {selectedCategory === cat && view === 'list' && <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>}
+                  <LayoutGrid size={18} />
+                  <span className="font-medium">Categories</span>
                 </button>
-              ))}
-            </div>
-          </nav>
+                
+                <button 
+                  onClick={() => { setView('list'); setSelectedCategory('All'); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === 'list' && selectedCategory === 'All' ? 'bg-stone-800 text-white shadow-inner' : 'hover:bg-stone-800 hover:text-white'}`}
+                >
+                  <BookOpen size={18} />
+                  <span className="font-medium">All Recipes</span>
+                </button>
+                
+                <button 
+                  onClick={() => { setView('list'); setSelectedCategory('Favorites'); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${selectedCategory === 'Favorites' ? 'bg-rose-900/30 text-rose-100 shadow-inner border border-rose-900/50' : 'hover:bg-stone-800 hover:text-white'}`}
+                >
+                  <Heart size={18} className={selectedCategory === 'Favorites' ? 'fill-current' : ''} />
+                  <span className="font-medium">Favorites</span>
+                </button>
 
-          <div className="mt-auto space-y-4 pt-8 px-2">
-             <button
-               onClick={() => { setIsPrinting(true); setMobileMenuOpen(false); }}
-               className="w-full text-left px-4 py-3 rounded-xl text-sm text-stone-500 hover:text-stone-800 hover:bg-white/50 flex items-center gap-3 transition-colors border border-transparent hover:border-stone-100"
-             >
-               <Printer size={16} /> Print Cookbook
-             </button>
-
-             <button 
-                onClick={() => { setShowAddModal(true); setMobileMenuOpen(false); }}
-                className="w-full bg-gradient-to-br from-sky-700 to-sky-800 hover:from-sky-600 hover:to-sky-700 text-white px-4 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-sky-900/30 hover:-translate-y-0.5 group relative overflow-hidden"
-             >
-               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 rounded-2xl"></div>
-               <div className="bg-white/20 p-1 rounded-full relative z-10"><Plus size={18} /></div>
-               <span className="font-bold tracking-wide relative z-10">Contribute Recipe</span>
-             </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-10 overflow-y-auto h-screen scroll-smooth relative">
-        {/* Background Ambient Light */}
-        <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.8),_rgba(255,255,255,0)_70%)] mix-blend-overlay"></div>
-        
-        <div className="max-w-7xl mx-auto pb-20 relative z-10">
-          {/* Search Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 border-b border-sky-200/60 pb-8">
-             <div>
-                <h2 className="font-serif text-5xl text-stone-800 mb-3 tracking-tight drop-shadow-sm">
-                  {view === 'categories' ? 'Welcome to the Kitchen' : (selectedCategory === 'All' ? 'Recipe Collection' : selectedCategory)}
-                </h2>
-                <p className="text-stone-500 text-lg font-light">
-                   {view === 'categories' 
-                      ? "Select a category to browse recipes" 
-                      : `${filteredRecipes.length} ${filteredRecipes.length === 1 ? 'recipe' : 'recipes'} found`}
-                </p>
-             </div>
-             
-             <div className="relative w-full md:w-96 group z-30">
-               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                 <Search className="text-stone-400 group-hover:text-sky-500 transition-colors" size={20} />
-               </div>
-               <input 
-                 ref={searchInputRef}
-                 type="text" 
-                 placeholder="Search recipes, ingredients..." 
-                 value={searchTerm}
-                 onFocus={() => setIsSearchFocused(true)}
-                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                 onChange={(e) => handleSearchChange(e.target.value)}
-                 onKeyDown={handleSearchKeyDown}
-                 className="block w-full pl-12 pr-10 py-4 bg-white border border-stone-200 rounded-2xl leading-5 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm group-hover:shadow-md"
-               />
-               {searchTerm && (
-                 <button 
-                   onClick={() => { setSearchTerm(''); setActiveSuggestion(-1); }}
-                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
-                 >
-                   <X size={16} />
-                 </button>
-               )}
-
-               {/* Search Suggestions */}
-               {isSearchFocused && searchTerm.trim() && searchSuggestions.length > 0 && (
-                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden animate-slide-up-fade z-50">
-                   {searchSuggestions.map((suggestion, idx) => (
-                     <button
-                       key={suggestion.id}
-                       onMouseDown={() => handleRecipeClick(suggestion)}
-                       className={`w-full text-left px-4 py-3 transition-colors text-sm text-stone-700 flex items-center gap-2 ${idx === activeSuggestion ? 'bg-sky-100' : 'hover:bg-sky-50'}`}
-                     >
-                       <Search size={14} className="text-stone-400" />
-                       {suggestion.title}
-                     </button>
-                   ))}
-                 </div>
-               )}
-             </div>
-          </div>
-
-          {/* Categories Grid View */}
-          {view === 'categories' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
-              {Object.values(Category).map(cat => (
-                <CategoryCard 
-                  key={cat} 
-                  category={cat} 
-                  count={getCategoryCount(cat)} 
-                  onClick={() => handleCategorySelect(cat)} 
-                />
-              ))}
-              <div 
-                onClick={() => { setSelectedCategory('All'); setView('list'); }}
-                className="group relative p-8 rounded-3xl border border-dashed border-stone-300 hover:border-sky-400 bg-white/50 hover:bg-white transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-4 min-h-[200px]"
-              >
-                  <div className="bg-stone-50 p-4 rounded-full text-stone-400 group-hover:text-sky-600 group-hover:bg-sky-50 transition-colors">
-                    <List size={32} />
-                  </div>
-                  <h3 className="font-serif text-xl font-bold text-stone-600 group-hover:text-stone-800">Browse All Recipes</h3>
-              </div>
-            </div>
-          )}
-
-          {/* Recipe List View */}
-          {view === 'list' && (
-            <>
-              {filteredRecipes.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                  {filteredRecipes.map(recipe => (
-                    <RecipeCard 
-                      key={recipe.id} 
-                      recipe={recipe} 
-                      onClick={() => handleRecipeClick(recipe)} 
-                      isFavorite={favorites.includes(recipe.id)}
-                      onToggleFavorite={(e) => toggleFavorite(e, recipe.id)}
-                    />
+                <div className="pt-6 mt-6 border-t border-stone-800">
+                  <h3 className="px-4 text-xs font-bold uppercase tracking-widest text-stone-600 mb-3">Categories</h3>
+                  {Object.values(Category).map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => handleCategorySelect(cat)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all ${selectedCategory === cat && view === 'list' ? 'bg-stone-800 text-sky-400' : 'hover:bg-stone-800/50 hover:text-stone-200'}`}
+                    >
+                      <span className="truncate">{cat}</span>
+                      {selectedCategory === cat && <ChevronRight size={14} />}
+                    </button>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-32 text-stone-400 bg-white/50 rounded-[2rem] border-2 border-dashed border-stone-200 backdrop-blur-sm">
-                  <div className="bg-sky-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <UtensilsCrossed size={48} className="opacity-30 text-stone-500" />
-                  </div>
-                  <p className="text-3xl font-serif text-stone-600 mb-2">No recipes found.</p>
-                  <p className="text-stone-500 max-w-md mx-auto">Try adjusting your search terms, selecting a different category, or add your own recipe to the collection!</p>
-                  <button onClick={() => { setSelectedCategory('All'); setView('categories'); }} className="mt-8 px-6 py-3 bg-sky-50 text-sky-700 rounded-xl font-bold hover:bg-sky-100 transition-colors">
-                    Back to Categories
-                  </button>
+             </nav>
+             
+             {/* Footer */}
+             <div className="p-4 border-t border-stone-800 bg-stone-950/50 text-xs text-stone-600 text-center">
+                <p>&copy; 2024 MacIntosh Family</p>
+             </div>
+          </aside>
+
+          {/* Mobile Header & Content Wrapper */}
+          <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-stone-50">
+             {/* Top Bar */}
+             <header className="bg-white border-b border-stone-200 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 z-10 shadow-sm flex-shrink-0">
+                <div className="flex items-center gap-4 flex-1">
+                   <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg">
+                      <Menu size={24} />
+                   </button>
+                   
+                   {/* Search Bar */}
+                   <div className="relative w-full max-w-xl group">
+                      <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${isSearchFocused ? 'text-sky-600' : 'text-stone-400'}`}>
+                         <Search size={18} />
+                      </div>
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search recipes, ingredients..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                        onKeyDown={handleSearchKeyDown}
+                        className="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-transparent rounded-xl focus:bg-white focus:border-sky-300 focus:ring-4 focus:ring-sky-100 outline-none transition-all placeholder:text-stone-400 text-sm md:text-base"
+                      />
+                      
+                      {/* Search Suggestions Dropdown */}
+                      {isSearchFocused && searchSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-stone-100 py-2 z-50 overflow-hidden animate-scale-in">
+                           <div className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-stone-400">Suggestions</div>
+                           {searchSuggestions.map((suggestion, idx) => (
+                             <button
+                               key={suggestion.id}
+                               onMouseDown={() => handleRecipeClick(suggestion)}
+                               className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-sky-50 transition-colors ${activeSuggestion === idx ? 'bg-sky-50 text-sky-700' : 'text-stone-600'}`}
+                             >
+                               <Search size={14} className="opacity-50" />
+                               <span className="truncate font-medium">{suggestion.title}</span>
+                             </button>
+                           ))}
+                        </div>
+                      )}
+                   </div>
                 </div>
-              )}
-            </>
+
+                <div className="flex items-center gap-2 md:gap-4 pl-4">
+                   <button 
+                     onClick={() => setShowAddModal(true)}
+                     className="bg-stone-900 hover:bg-stone-800 text-white p-2.5 md:px-5 md:py-2.5 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                   >
+                     <Plus size={20} />
+                     <span className="hidden md:inline font-medium">Add Recipe</span>
+                   </button>
+                </div>
+             </header>
+
+             {/* Content Area */}
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 scroll-smooth relative">
+                
+                {/* Categories Dashboard View */}
+                {view === 'categories' && (
+                  <div className="max-w-7xl mx-auto animate-fade-in">
+                    <div className="mb-10 text-center md:text-left">
+                       <h2 className="font-serif text-3xl md:text-4xl text-stone-800 mb-3">Welcome to the Kitchen</h2>
+                       <p className="text-stone-500 text-lg">Select a category to explore Nan's collection.</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {Object.values(Category).map((cat) => {
+                         const count = recipes.filter(r => r.category === cat).length;
+                         return (
+                           <CategoryCard 
+                             key={cat} 
+                             category={cat} 
+                             count={count} 
+                             onClick={() => { setSelectedCategory(cat); setView('list'); }} 
+                           />
+                         );
+                       })}
+                       {/* All Recipes Card */}
+                       <button 
+                          onClick={() => { setSelectedCategory('All'); setView('list'); }}
+                          className="group relative p-8 h-64 rounded-[2rem] border border-stone-200 shadow-sm hover:shadow-2xl transition-all duration-500 bg-white flex flex-col items-center justify-center text-center gap-6 hover:-translate-y-2 overflow-hidden"
+                        >
+                           <div className="bg-stone-50 p-5 rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 ring-4 ring-stone-100 relative z-10 text-stone-700">
+                             <BookOpen size={32} />
+                           </div>
+                           <div className="relative z-10 text-stone-800">
+                             <h3 className="font-serif text-2xl font-bold mb-2">All Recipes</h3>
+                             <span className="inline-block px-3 py-1 bg-stone-100 rounded-full text-xs font-bold uppercase tracking-widest text-stone-600">
+                               {recipes.length} Total
+                             </span>
+                           </div>
+                        </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recipe List View */}
+                {view === 'list' && (
+                  <div className="max-w-7xl mx-auto animate-fade-in h-full flex flex-col">
+                     <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 flex-shrink-0">
+                        <div>
+                           <div className="flex items-center gap-2 text-stone-400 text-sm font-medium mb-1">
+                             <button onClick={() => setView('categories')} className="hover:text-stone-600 hover:underline">Categories</button>
+                             <ChevronRight size={14} />
+                             <span className="text-sky-700">{selectedCategory}</span>
+                           </div>
+                           <h2 className="font-serif text-3xl md:text-4xl text-stone-800">
+                              {selectedCategory === 'All' ? 'All Recipes' : selectedCategory}
+                           </h2>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 bg-white p-1.5 rounded-lg border border-stone-200 shadow-sm">
+                           <button 
+                             onClick={() => setLayoutMode('grid')}
+                             className={`p-2 rounded-md transition-all ${layoutMode === 'grid' ? 'bg-stone-100 text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                             title="Grid View"
+                           >
+                             <LayoutGrid size={20} />
+                           </button>
+                           <div className="w-px h-6 bg-stone-200"></div>
+                           <button 
+                             onClick={() => setLayoutMode('list')}
+                             className={`p-2 rounded-md transition-all ${layoutMode === 'list' ? 'bg-stone-100 text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                             title="List View"
+                           >
+                             <List size={20} />
+                           </button>
+                        </div>
+                     </div>
+
+                     {filteredRecipes.length === 0 ? (
+                       <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-400 min-h-[400px]">
+                          <div className="bg-stone-100 p-6 rounded-full mb-4">
+                            <Search size={48} className="opacity-50" />
+                          </div>
+                          <p className="text-lg font-serif italic mb-2">No recipes found</p>
+                          <p className="text-sm">Try adjusting your search or category.</p>
+                          {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} className="mt-4 text-sky-600 hover:underline font-bold text-sm">
+                              Clear Search
+                            </button>
+                          )}
+                       </div>
+                     ) : (
+                       <div className={`${layoutMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'flex flex-col gap-3'} pb-20`}>
+                          {filteredRecipes.map(recipe => (
+                             layoutMode === 'grid' ? (
+                               <RecipeCard 
+                                 key={recipe.id}
+                                 recipe={recipe}
+                                 onClick={() => handleRecipeClick(recipe)}
+                                 isFavorite={favorites.includes(recipe.id)}
+                                 onToggleFavorite={(e) => toggleFavorite(e, recipe.id)}
+                               />
+                             ) : (
+                               <RecipeListItem 
+                                  key={recipe.id}
+                                  recipe={recipe}
+                                  onClick={() => handleRecipeClick(recipe)}
+                                  isFavorite={favorites.includes(recipe.id)}
+                                  onToggleFavorite={(e) => toggleFavorite(e, recipe.id)}
+                               />
+                             )
+                          ))}
+                       </div>
+                     )}
+                  </div>
+                )}
+
+                {/* Recipe Detail View */}
+                {view === 'detail' && selectedRecipe && (
+                  <div className="animate-slide-up pb-20">
+                     <RecipeDetail 
+                       recipe={selectedRecipe} 
+                       onBack={() => setView('list')}
+                       isFavorite={favorites.includes(selectedRecipe.id)}
+                       onToggleFavorite={() => {
+                          // Manually toggle because RecipeDetail expects void fn
+                          const e = { stopPropagation: () => {} } as React.MouseEvent;
+                          toggleFavorite(e, selectedRecipe.id);
+                       }}
+                       onEdit={() => {
+                         setEditingRecipe(selectedRecipe);
+                         setShowAddModal(true);
+                       }}
+                       onDelete={handleDeleteRecipe}
+                       onUpdateRecipe={handleUpdateRecipe}
+                     />
+                  </div>
+                )}
+             </div>
+             
+             {/* Toast Notification */}
+             {showSuccessToast && (
+               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-stone-900/90 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-slide-up backdrop-blur-md z-50">
+                 <div className="bg-green-500 rounded-full p-1"><Check size={12} strokeWidth={4} /></div>
+                 <span className="font-medium">Action completed successfully</span>
+               </div>
+             )}
+          </main>
+          
+          {/* Mobile Sidebar Overlay */}
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-50 md:hidden flex">
+               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}></div>
+               <div className="relative w-64 bg-stone-900 text-stone-300 h-full shadow-2xl animate-slide-right flex flex-col">
+                  <div className="p-6 border-b border-stone-800 flex justify-between items-center">
+                    <span className="font-serif text-xl text-stone-100">Menu</span>
+                    <button onClick={() => setMobileMenuOpen(false)}><X size={24} /></button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                      <button 
+                        onClick={() => { setView('categories'); setSelectedCategory('All'); setMobileMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-stone-800 text-stone-100"
+                      >
+                        <LayoutGrid size={18} /> Categories
+                      </button>
+                      <button 
+                        onClick={() => { setView('list'); setSelectedCategory('All'); setMobileMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-stone-800 text-stone-100"
+                      >
+                        <BookOpen size={18} /> All Recipes
+                      </button>
+                      <div className="border-t border-stone-800 my-2 pt-2">
+                        {Object.values(Category).map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => handleCategorySelect(cat)}
+                            className="w-full text-left px-4 py-3 text-sm hover:bg-stone-800 rounded-lg"
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                  </div>
+               </div>
+            </div>
           )}
         </div>
-      </main>
+      )}
 
+      {/* Add/Edit Modal */}
       {showAddModal && (
         <RecipeModal 
-          onClose={() => setShowAddModal(false)} 
-          onSave={handleAddRecipe} 
+          onClose={() => { setShowAddModal(false); setEditingRecipe(null); }} 
+          onSave={editingRecipe ? handleUpdateRecipe : handleAddRecipe}
+          initialData={editingRecipe || undefined}
         />
-      )}
-      
-      {editingRecipe && (
-        <RecipeModal
-          initialData={editingRecipe}
-          onClose={() => setEditingRecipe(null)}
-          onSave={handleUpdateRecipe}
-        />
-      )}
-
-      {showSuccessToast && (
-        <div className="fixed bottom-10 right-10 bg-white border border-stone-100 text-stone-800 p-1 rounded-2xl shadow-2xl flex items-center gap-4 z-50 animate-slide-up-fade">
-          <div className="bg-sky-500 text-white p-3 rounded-xl shadow-lg shadow-sky-500/30">
-            <Check size={24} />
-          </div>
-          <div className="pr-6 py-2">
-            <p className="font-serif font-bold text-lg text-stone-800">Recipe Saved</p>
-            <p className="text-xs text-stone-500 font-medium uppercase tracking-wide">Collection Updated</p>
-          </div>
-        </div>
       )}
     </div>
   );

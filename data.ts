@@ -420,6 +420,31 @@ export const INITIAL_RECIPES: Recipe[] = [
     addedBy: "Nan",
     timestamp: Date.now()
   },
+  {
+    id: id(),
+    title: "The Evangeline Vegetable Soup",
+    category: Category.SOUPS_SALADS,
+    ingredients: [
+      "3-4 lbs Beef Shank or Soup Bone",
+      "3 quarts Water",
+      "1 cup Carrots, diced",
+      "1 cup Turnip, diced",
+      "1 cup Cabbage, shredded",
+      "1 cup Potatoes, diced",
+      "1/2 cup Onions, chopped",
+      "Salt & Pepper to taste",
+      "Summer Savory"
+    ],
+    instructions: [
+      "Cover soup bone with water. Bring to a boil and skim.",
+      "Simmer for 2-3 hours until meat falls off bone.",
+      "Remove bone, chop meat, and return to pot.",
+      "Add vegetables and seasonings. Simmer until vegetables are tender (about 30-45 mins)."
+    ],
+    cookTime: "3-4 hours",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
 
   // --- MAIN DISHES ---
   {
@@ -539,6 +564,49 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     temp: "350°F",
     cookTime: "1 hour",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "French Fried Onion Rings",
+    category: Category.SIDE_DISHES,
+    ingredients: [
+      "2 large Sweet Onions, sliced 1/4 inch thick",
+      "1.5 cups Flour",
+      "1 tsp Baking Powder",
+      "1 tsp Salt",
+      "1 Egg",
+      "1 cup Milk",
+      "Oil for frying"
+    ],
+    instructions: [
+      "Separate onion slices into rings.",
+      "Whisk flour, baking powder, salt, egg, and milk to make a batter.",
+      "Dip rings in batter.",
+      "Fry in hot oil (375°F) until golden brown. Drain on paper towels."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "French Fried Onion Rings (Version 2)",
+    category: Category.SIDE_DISHES,
+    ingredients: [
+      "4-5 Onions (medium to large)",
+      "2 cups Milk",
+      "3 Eggs",
+      "Seasonings (paprika, garlic, onion powder)",
+      "Salt & Pepper",
+      "1 cup Flour"
+    ],
+    instructions: [
+      "Slice onions. Whisk milk, eggs, and seasonings in a bowl.",
+      "Place flour in a bag.",
+      "Dip rings in wet mixture, then shake in flour bag to coat.",
+      "Fry in hot oil (385°F) until golden brown (2-4 mins)."
+    ],
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -1462,6 +1530,28 @@ export const INITIAL_RECIPES: Recipe[] = [
   // --- DESSERTS & BAKED GOODS ---
   {
     id: id(),
+    title: "Apple Crisp",
+    category: Category.DESSERTS,
+    ingredients: [
+      "4-5 cups Sliced Apples",
+      "1/2 cup Water",
+      "1/2 cup Sugar",
+      "1 tsp Cinnamon",
+      "Topping: 3/4 cup Flour, 1 cup Sugar, 1/2 cup Butter"
+    ],
+    instructions: [
+      "Place apples in buttered baking dish.",
+      "Mix water, sugar, and cinnamon; pour over apples.",
+      "Crumble flour, sugar, and butter mixture over top.",
+      "Bake at 350°F for about 45 minutes until apples are tender."
+    ],
+    temp: "350°F",
+    cookTime: "45 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Apple Fritters",
     category: Category.DESSERTS,
     ingredients: [
@@ -1612,6 +1702,27 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Butterscotch Pie (Filling)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Brown Sugar",
+      "2 Tbsp Cornstarch",
+      "1 cup Milk",
+      "2 Egg Yolks",
+      "1 Tbsp Butter",
+      "1 tsp Vanilla"
+    ],
+    instructions: [
+      "Combine sugar and cornstarch.",
+      "Stir in milk and egg yolks.",
+      "Cook over medium heat until thickened.",
+      "Remove from heat; add butter and vanilla. Pour into baked pie shell."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Carrot Cake",
     category: Category.DESSERTS,
     ingredients: [
@@ -1676,22 +1787,146 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Chocolate Chip Cookies (Version 2)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Margarine",
+      "3/4 cup Brown Sugar",
+      "2/3 cup White Sugar",
+      "2 Eggs",
+      "2.25 cups Flour",
+      "Choc chips"
+    ],
+    instructions: [
+      "Cream margarine/sugars. Add eggs.",
+      "Mix in flour/soda. Stir in chips.",
+      "Bake 10-12 mins at 350°F."
+    ],
+    temp: "350°F",
+    cookTime: "12 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Chocolate Chip Cookies (Version 3)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Butter",
+      "3/4 cup Brown Sugar",
+      "3/4 cup White Sugar",
+      "2 Eggs",
+      "2.25 cups Flour",
+      "Choc chips"
+    ],
+    instructions: [
+      "Cream butter/sugars. Add eggs.",
+      "Mix in flour/soda. Stir in chips.",
+      "Bake 10-15 mins at 350°F."
+    ],
+    temp: "350°F",
+    cookTime: "15 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Chocolate Swirl Cheesecake Squares",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Crust: 1 cup Flour, 1/3 cup Sugar, 1/2 cup Butter",
+      "Filling: 1 lb Cream Cheese, 3/4 cup Sugar, 2 Eggs",
+      "2 oz Semi-sweet Chocolate, melted"
+    ],
+    instructions: [
+      "Bake crust 15 mins at 350°F.",
+      "Beat cheese, sugar, and eggs. Pour over crust.",
+      "Drizzle melted chocolate over filling and swirl with a knife.",
+      "Bake 25-30 mins at 350°F."
+    ],
+    temp: "350°F",
+    cookTime: "30 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Christmas Fruit Balls",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Dates, chopped",
+      "1 cup Cherries, chopped",
+      "1/2 cup Sugar",
+      "1 Egg, beaten",
+      "2 cups Rice Krispies",
+      "Coconut for rolling"
+    ],
+    instructions: [
+      "Cook dates, cherries, sugar, and egg in a saucepan until thick (approx 10 mins).",
+      "Remove from heat and stir in Rice Krispies.",
+      "Form into small balls and roll in coconut."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Christmas Fruit Cake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "6 cups raisins, 6 cups currants, 4 cups dates, 4 cups cherries, 1 cup pineapple, 1 cup peel, 2 cups walnuts, 1.5 cups almonds",
+      "3 cups shortening",
+      "5 cups brown sugar",
+      "10 eggs (separated)",
+      "7 cups flour, spices, 1 cup sour milk"
+    ],
+    instructions: [
+      "Cream fat/sugar/yolks. Add dry ingredients alternating with milk. Fold in stiff whites.",
+      "Stir in fruit/nuts.",
+      "Bake at 275°F for 2.5 - 3 hours."
+    ],
+    temp: "275°F",
+    cookTime: "3 hours",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Christmas Fruit Cake (Version 2)",
     category: Category.DESSERTS,
     ingredients: [
-      "6 cups Raisins, Currants, Dates, Cherries, Peel",
-      "3 cups Shortening",
-      "5 cups Brown Sugar",
-      "10 Eggs",
-      "7 cups Flour",
-      "Spices, Sour milk"
+      "6 cups raisins, 6 cups currants, dates, cherries, pineapple, peel, nuts.",
+      "3 cups shortening, 5 cups brown sugar, 10 eggs (separated), 7 cups flour, spices, 1 cup sour milk.",
+      "10 egg yolks, 1 cup crushed pineapple, 1 lemon rind"
     ],
     instructions: [
-      "Cream fat/sugar. Add eggs.",
-      "Mix dry/wet. Fold in fruit.",
-      "Bake 2.5-3 hours at 325°F."
+      "Cream fat/sugar/yolks. Add dry ingredients alternating with milk. Fold in stiff whites.",
+      "Stir in fruit/nuts.",
+      "Bake at 325°F for 2.5 - 3 hours."
     ],
     temp: "325°F",
+    cookTime: "3 hours",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Christmas Pudding (Bernadine's)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Suet",
+      "1 cup Molasses",
+      "1 cup Milk",
+      "3 cups Flour",
+      "1.5 cups Raisins",
+      "Spices: Cinnamon, Cloves, Nutmeg"
+    ],
+    instructions: [
+      "Mix suet, molasses, and milk.",
+      "Stir in flour and spices, then add raisins.",
+      "Pour into a greased mold.",
+      "Steam for 3 hours."
+    ],
     cookTime: "3 hours",
     addedBy: "Nan",
     timestamp: Date.now()
@@ -1734,6 +1969,42 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Classic American Buttercream Icing",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1/2 cup Butter, softened",
+      "3 cups Icing Sugar",
+      "1 tsp Vanilla",
+      "2-3 Tbsp Milk or Cream"
+    ],
+    instructions: [
+      "Cream butter.",
+      "Add sugar alternately with milk.",
+      "Beat until fluffy."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Classic Cream Cheese Icing",
+    category: Category.DESSERTS,
+    ingredients: [
+      "8 oz Cream Cheese, softened",
+      "1/4 cup Butter, softened",
+      "2 cups Icing Sugar",
+      "1 tsp Vanilla"
+    ],
+    instructions: [
+      "Beat cream cheese and butter until smooth.",
+      "Gradually add icing sugar.",
+      "Stir in vanilla."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Classic New York Cheesecake",
     category: Category.DESSERTS,
     ingredients: [
@@ -1768,6 +2039,29 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     temp: "325°F",
     cookTime: "1 hour",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Classic White Layer Cake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1/2 cup Butter",
+      "1.5 cups Sugar",
+      "2 1/4 cups Cake Flour",
+      "1 cup Milk",
+      "4 Egg Whites, beaten stiff",
+      "Vanilla"
+    ],
+    instructions: [
+      "Cream butter and sugar.",
+      "Add flour and milk alternately.",
+      "Fold in beaten egg whites.",
+      "Bake in layer pans at 350°F for 25-30 mins."
+    ],
+    temp: "350°F",
+    cookTime: "30 mins",
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -1823,6 +2117,28 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Easter Cake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Butter",
+      "2 cups Sugar",
+      "4 Eggs",
+      "3 cups Flour",
+      "1 cup Milk",
+      "Lemon Zest"
+    ],
+    instructions: [
+      "Cream butter and sugar. Add eggs.",
+      "Mix in flour and milk.",
+      "Bake in a tube pan at 350°F for 1 hour."
+    ],
+    temp: "350°F",
+    cookTime: "1 hour",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Fresh Berry Pie",
     category: Category.DESSERTS,
     ingredients: [
@@ -1835,6 +2151,25 @@ export const INITIAL_RECIPES: Recipe[] = [
       "Bake 450°F for 15 mins, then 350°F for 50 mins."
     ],
     cookTime: "1 hour",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Fruit Pie",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Pie Pastry",
+      "4 cups Mixed Fruit",
+      "1 cup Sugar",
+      "3 Tbsp Tapioca or Flour"
+    ],
+    instructions: [
+      "Combine fruit with sugar and thickener.",
+      "Pour into pie shell. Top with crust.",
+      "Bake at 425°F for 15 mins, then 350°F for 35 mins."
+    ],
+    cookTime: "50 mins",
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -1858,6 +2193,44 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Fruit Pizza (Version 2)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Crust: Margarine, Brown Sugar, Flour, Coconut, Oats, Egg",
+      "Cream Cheese Filling",
+      "Fresh Fruit",
+      "Glaze"
+    ],
+    instructions: [
+      "Bake crust at 350°F.",
+      "Spread cheese. Arrange fruit.",
+      "Glaze and chill."
+    ],
+    temp: "350°F",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Fudge",
+    category: Category.DESSERTS,
+    ingredients: [
+      "2 cups Sugar",
+      "2/3 cup Milk",
+      "2 squares Chocolate or 1/4 cup Cocoa",
+      "2 Tbsp Butter",
+      "1 tsp Vanilla"
+    ],
+    instructions: [
+      "Boil sugar, milk, and chocolate to soft ball stage.",
+      "Add butter and vanilla. Cool slightly.",
+      "Beat until thick and creamy. Pour into pan."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Fudgy Brownies",
     category: Category.DESSERTS,
     ingredients: [
@@ -1874,6 +2247,27 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     temp: "350°F",
     cookTime: "30 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Genoise Sponge Cake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "4 Eggs",
+      "2/3 cup Sugar",
+      "3/4 cup Flour",
+      "1/4 cup Butter, melted"
+    ],
+    instructions: [
+      "Whisk eggs and sugar over warm water until triple in volume.",
+      "Fold in flour gently.",
+      "Fold in butter.",
+      "Bake 25 mins at 350°F."
+    ],
+    temp: "350°F",
+    cookTime: "25 mins",
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -2111,6 +2505,26 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Microwave Super Chocolate Brownies",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1/2 cup Butter",
+      "1 cup Sugar",
+      "2 Eggs",
+      "1/2 cup Flour",
+      "1/3 cup Cocoa"
+    ],
+    instructions: [
+      "Melt butter in microwave.",
+      "Stir in sugar, cocoa, eggs, and flour.",
+      "Pour into glass dish. Microwave on High for 5-6 minutes."
+    ],
+    cookTime: "6 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Molasses Cookies (Shirley MacIntosh's)",
     category: Category.DESSERTS,
     ingredients: [
@@ -2141,6 +2555,24 @@ export const INITIAL_RECIPES: Recipe[] = [
       "Bake at 325°F."
     ],
     temp: "325°F",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Molasses Taffy",
+    category: Category.DESSERTS,
+    ingredients: [
+      "2 cups Molasses",
+      "1 cup Sugar",
+      "1 Tbsp Vinegar",
+      "1 Tbsp Butter"
+    ],
+    instructions: [
+      "Boil ingredients to hard crack stage.",
+      "Pour onto buttered pan.",
+      "When cool enough to handle, pull until light in color."
+    ],
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -2180,6 +2612,44 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "No-Bake Dream Whip Cheesecake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 envelope Dream Whip",
+      "1 pkg (8 oz) Cream Cheese",
+      "1/2 cup Sugar",
+      "Graham Wafer Crust"
+    ],
+    instructions: [
+      "Whip Dream Whip according to package.",
+      "Beat cream cheese and sugar; fold in whipped topping.",
+      "Spoon into crust and chill."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "No-Bake Toblerone Cheesecake",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Graham Crumb Crust",
+      "2 bars Toblerone (melted)",
+      "2 pkg Cream Cheese",
+      "1/2 cup Sugar",
+      "1 cup Whipping Cream (whipped)"
+    ],
+    instructions: [
+      "Beat cream cheese and sugar.",
+      "Add melted chocolate.",
+      "Fold in whipped cream.",
+      "Chill in crust."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Orange Mandarin Cake",
     category: Category.DESSERTS,
     ingredients: [
@@ -2192,6 +2662,22 @@ export const INITIAL_RECIPES: Recipe[] = [
       "Mix Jello/Whip/Oranges.",
       "Fold in cake crumbs.",
       "Press in pan. Chill."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Orange Pineapple Squares",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Base: Graham crumbs and butter",
+      "Filling: 1 pkg Orange Jello, 1 cup Boiling water, 1 can Crushed Pineapple, 1 cup Whipped Topping"
+    ],
+    instructions: [
+      "Dissolve Jello in water. Add pineapple with juice. Chill until partially set.",
+      "Fold in whipped topping.",
+      "Pour over base and chill."
     ],
     addedBy: "Nan",
     timestamp: Date.now()
@@ -2297,6 +2783,24 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Pulled Taffy",
+    category: Category.DESSERTS,
+    ingredients: [
+      "2 cups Sugar",
+      "1/2 cup Water",
+      "1/4 cup Vinegar",
+      "1 Tbsp Butter"
+    ],
+    instructions: [
+      "Boil without stirring until brittle (hard crack).",
+      "Pour onto buttered plate.",
+      "When cool enough, pull until white."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Raisin Cookies",
     category: Category.DESSERTS,
     ingredients: [
@@ -2323,6 +2827,23 @@ export const INITIAL_RECIPES: Recipe[] = [
       "Roll dough. Spread filling.",
       "Roll up, slice.",
       "Bake at 350°F."
+    ],
+    temp: "350°F",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Raspberry Pinwheels (Version 2)",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Dough: 2 cups Flour, 1/2 cup Butter, Sugar, Egg",
+      "Filling: 1/2 cup Jam, 1/2 cup Coconut"
+    ],
+    instructions: [
+      "Make dough.",
+      "Spread filling, roll, chill.",
+      "Slice and bake 8-10 mins at 350°F."
     ],
     temp: "350°F",
     addedBy: "Nan",
@@ -2365,6 +2886,25 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Seven Minute Frosting",
+    category: Category.DESSERTS,
+    ingredients: [
+      "2 Egg Whites",
+      "1.5 cups Sugar",
+      "1.5 tsp Corn Syrup",
+      "5 Tbsp Water"
+    ],
+    instructions: [
+      "Combine all in top of double boiler.",
+      "Beat constantly over boiling water for 7 minutes or until stiff peaks form.",
+      "Remove from heat and add vanilla."
+    ],
+    cookTime: "7 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Shortbread Cookies (Dee's)",
     category: Category.DESSERTS,
     ingredients: [
@@ -2393,6 +2933,26 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     temp: "350°F",
     cookTime: "20 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Skor Toffee Chocolate Bars",
+    category: Category.DESSERTS,
+    ingredients: [
+      "Graham Crackers",
+      "1 cup Butter",
+      "1 cup Brown Sugar",
+      "1 cup Chocolate Chips"
+    ],
+    instructions: [
+      "Line pan with crackers.",
+      "Boil butter and sugar; pour over crackers.",
+      "Bake 5 mins at 350°F. Sprinkle with chips."
+    ],
+    temp: "350°F",
+    cookTime: "5 mins",
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -2518,6 +3078,29 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Wade's Classic Chocolate Chip Cookies",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Butter",
+      "1 cup Brown Sugar",
+      "1/2 cup White Sugar",
+      "2 Eggs",
+      "2 cups Flour",
+      "1.5 cups Chocolate Chips"
+    ],
+    instructions: [
+      "Cream butter and sugars. Beat in eggs.",
+      "Mix in flour and soda.",
+      "Stir in chips.",
+      "Bake 10-12 mins at 350°F."
+    ],
+    temp: "350°F",
+    cookTime: "12 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Wade's Classic Sugar Cookies",
     category: Category.DESSERTS,
     ingredients: [
@@ -2553,6 +3136,25 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     temp: "375°F",
     cookTime: "12 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Wade's Perfect Peanut Butter Cookies",
+    category: Category.DESSERTS,
+    ingredients: [
+      "1 cup Peanut Butter",
+      "1 cup Sugar",
+      "1 Egg"
+    ],
+    instructions: [
+      "Mix ingredients until smooth.",
+      "Roll into balls and press with a fork.",
+      "Bake at 350°F for 8-10 minutes."
+    ],
+    temp: "350°F",
+    cookTime: "10 mins",
     addedBy: "Nan",
     timestamp: Date.now()
   },
@@ -2667,6 +3269,27 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Cucumber Relish",
+    category: Category.SAUCES,
+    ingredients: [
+      "6 Cucumbers",
+      "3 Onions",
+      "2 Red Peppers",
+      "2 cups Vinegar",
+      "2 cups Sugar",
+      "Mustard Seed"
+    ],
+    instructions: [
+      "Grind vegetables and drain liquid.",
+      "Add vinegar, sugar, and spices.",
+      "Simmer 20 minutes and seal in jars."
+    ],
+    cookTime: "20 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Donair Sauce (East Coast)",
     category: Category.SAUCES,
     ingredients: [
@@ -2701,6 +3324,42 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Fudgy Cocoa Frosting",
+    category: Category.SAUCES,
+    ingredients: [
+      "1/2 cup Butter",
+      "3/4 cup Cocoa",
+      "3 cups Icing Sugar",
+      "1/3 cup Milk"
+    ],
+    instructions: [
+      "Melt butter. Stir in cocoa.",
+      "Alternately add sugar and milk, beating to spreading consistency."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Garam Masala",
+    category: Category.SAUCES,
+    ingredients: [
+      "2 Tbsp Coriander Seeds",
+      "1 Tbsp Cumin Seeds",
+      "1 Tbsp Cardamom",
+      "1 tsp Cloves",
+      "1 tsp Black Peppercorns",
+      "1 Stick Cinnamon"
+    ],
+    instructions: [
+      "Toast spices in a dry pan until fragrant.",
+      "Cool and grind to a fine powder."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Green Tomato Chow",
     category: Category.SAUCES,
     ingredients: [
@@ -2719,6 +3378,26 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Green Tomato Chow Chow",
+    category: Category.SAUCES,
+    ingredients: [
+      "16 cups Green Tomatoes, chopped",
+      "8 cups Onions, chopped",
+      "1/2 cup Pickling Salt",
+      "Syrup: 4 cups Vinegar, 5 cups White Sugar, 1/2 cup Brown Sugar, Pickling Spices"
+    ],
+    instructions: [
+      "Salt veg and stand overnight. Drain.",
+      "Boil syrup ingredients.",
+      "Add veg and simmer 1-2 hours.",
+      "Jar and seal."
+    ],
+    cookTime: "2 hours",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Hot Fudge Sauce",
     category: Category.SAUCES,
     ingredients: [
@@ -2729,6 +3408,25 @@ export const INITIAL_RECIPES: Recipe[] = [
     instructions: [
       "Boil syrup/cocoa.",
       "Stir in butter."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Jam Tart Pastry",
+    category: Category.SAUCES,
+    ingredients: [
+      "2 cups Flour",
+      "1/2 cup Butter",
+      "1/2 cup Lard",
+      "1 Egg Yolk",
+      "Cold Water"
+    ],
+    instructions: [
+      "Cut fat into flour.",
+      "Mix egg yolk with water and add to flour mixture.",
+      "Roll out and fill with jam."
     ],
     addedBy: "Nan",
     timestamp: Date.now()
@@ -2767,6 +3465,26 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Mussel Steaming Liquid (Version 2)",
+    category: Category.SAUCES,
+    ingredients: [
+      "1 cup White Wine",
+      "1 cup Water",
+      "1/2 cup Salsa",
+      "1/2 cup French Italian dressing",
+      "1/2 cup Vinegar"
+    ],
+    instructions: [
+      "Combine all liquids in a large pot.",
+      "Bring to a boil.",
+      "Add mussels and steam until open (5-8 mins)."
+    ],
+    cookTime: "10 mins",
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Pumpkin Preserve",
     category: Category.SAUCES,
     ingredients: [
@@ -2784,6 +3502,24 @@ export const INITIAL_RECIPES: Recipe[] = [
   },
   {
     id: id(),
+    title: "Ripe Cucumber Pickles",
+    category: Category.SAUCES,
+    ingredients: [
+      "Large Ripe Cucumbers",
+      "Vinegar",
+      "Sugar",
+      "Pickling Spices"
+    ],
+    instructions: [
+      "Peel and seed cucumbers; cut into strips.",
+      "Soak in salt water overnight.",
+      "Simmer in vinegar syrup until clear."
+    ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
     title: "Roasted Root Veg Seasoning",
     category: Category.SAUCES,
     ingredients: [
@@ -2795,6 +3531,26 @@ export const INITIAL_RECIPES: Recipe[] = [
       "Toss veg in butter and salts.",
       "Roast."
     ],
+    addedBy: "Nan",
+    timestamp: Date.now()
+  },
+  {
+    id: id(),
+    title: "Spaghetti Sauce",
+    category: Category.SAUCES,
+    ingredients: [
+      "1 lb Ground Beef",
+      "1 Onion, chopped",
+      "1 can Tomatoes",
+      "1 can Tomato Paste",
+      "Basil, Oregano, Garlic"
+    ],
+    instructions: [
+      "Brown beef and onion.",
+      "Add remaining ingredients.",
+      "Simmer for 1 hour."
+    ],
+    cookTime: "1 hour",
     addedBy: "Nan",
     timestamp: Date.now()
   },
