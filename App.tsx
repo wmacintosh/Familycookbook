@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee, Image as ImageIcon, AlertTriangle, ChevronDown, FileJson, Copy, Database, Cloud, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Heart, ArrowLeft, LayoutGrid, List, Soup, Clock, Thermometer, ChevronRight, Edit2, ChevronDown, FileJson, Copy, Database, RefreshCw, AlertCircle, CheckCircle, Image as ImageIcon } from 'lucide-react';
 // @ts-ignore
 import { initializeApp } from "firebase/app";
 // @ts-ignore
-import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "firebase/firestore";
 // @ts-ignore
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 // @ts-ignore
@@ -21,9 +21,9 @@ export interface Recipe {
   prepTime?: string;
   cookTime?: string;
   temp?: string;
-  description?: string; // Subtitle or extra notes
-  addedBy: string; // "Nan" for original, or user name
-  userColor?: string; // Hex code for user avatar/badge
+  description?: string;
+  addedBy: string;
+  userColor?: string;
   timestamp: number;
   imageUrl?: string;
 }
@@ -38,35 +38,26 @@ export enum Category {
   SAUCES = "Sauces, Condiments & Extras"
 }
 
-export interface UserColorMap {
-  [username: string]: string;
-}
-
 // --- Helpers ---
-
 const getEnv = (key: string) => {
   try {
     // @ts-ignore
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       // @ts-ignore
-      return import.meta.env[key] || import.meta.env[`VITE_${key}`];
+      return import.meta.env[key] || import.meta.env[`VITE_${key}`] || "";
     }
   } catch (e) {}
   try {
     if (typeof process !== 'undefined' && process.env) {
-       return process.env[key] || process.env[`VITE_${key}`];
+       return process.env[key] || process.env[`VITE_${key}`] || "";
     }
   } catch (e) {}
   return "";
 }
 
-// Helper to safely get API Key without crashing if process is undefined (Vercel/Vite issue)
 const getApiKey = () => getEnv('API_KEY');
-
-// Helper to create IDs
 const id = () => Math.random().toString(36).substr(2, 9);
 
-// Image Resizer and Optimizer
 const resizeImage = (file: File, maxWidth: number = 1200): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -76,19 +67,15 @@ const resizeImage = (file: File, maxWidth: number = 1200): Promise<string> => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        
-        // Calculate new dimensions
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
         }
-        
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // Export as JPEG with 0.8 quality for compression
             resolve(canvas.toDataURL('image/jpeg', 0.8));
         } else {
             reject(new Error("Could not get canvas context"));
@@ -113,7 +100,7 @@ const firebaseConfig = {
   measurementId: getEnv('FIREBASE_MEASUREMENT_ID')
 };
 
-// Initialize Firebase only if config is present
+// Initialize Firebase safely
 let db: any = null;
 let storage: any = null;
 let analytics: any = null;
@@ -125,118 +112,63 @@ if (firebaseConfig.apiKey) {
     storage = getStorage(app);
     try {
         analytics = getAnalytics(app);
-        console.log("Firebase Analytics initialized");
     } catch (e) {
-        console.warn("Analytics failed to initialize (likely due to environment)", e);
+        console.warn("Analytics initialization skipped:", e);
     }
-    console.log("Firebase initialized successfully");
+    console.log("Firebase initialized");
   } catch (e) {
-    console.error("Firebase initialization failed:", e);
+    console.error("Firebase init failed:", e);
   }
 }
 
-// --- Data Service Layer ---
+// --- Data Service ---
 const DataService = {
   async getRecipes(): Promise<Recipe[]> {
-    // Try Firebase first
     if (db) {
       try {
         const querySnapshot = await getDocs(collection(db, "recipes"));
         const recipes: Recipe[] = [];
-        querySnapshot.forEach((doc: any) => {
-          recipes.push(doc.data() as Recipe);
-        });
-        
-        // If DB has data, return it
+        querySnapshot.forEach((doc: any) => recipes.push(doc.data() as Recipe));
         if (recipes.length > 0) return recipes;
-        // If DB is valid but empty, it might be a new setup, fall through to check local/initial
       } catch (e) {
-        console.error("Error fetching from Firebase (falling back to local):", e);
-        // Fall through to local storage
+        console.warn("Falling back to local storage due to Firebase error");
       }
     }
-
-    // Fallback to LocalStorage
     const stored = localStorage.getItem('shirleys_kitchen_recipes');
-    if (stored) return JSON.parse(stored);
-    
-    // Default fallback
-    return [];
+    return stored ? JSON.parse(stored) : [];
   },
 
   async uploadImage(base64Image: string, recipeId: string): Promise<string> {
-    // If storage is not available, return the base64 string directly
-    // NOTE: This might hit Firestore 1MB limits, but it's the only fallback without storage.
     if (!storage) {
-        console.warn("Firebase Storage not configured. Saving image as Base64 (size limit risk).");
         return base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`; 
     }
-
     try {
-        // Strip metadata prefix if present for uploadString
         const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, "");
         const storageRef = ref(storage, `recipe-images/${recipeId}_${Date.now()}.jpg`);
         await uploadString(storageRef, cleanBase64, 'base64', { contentType: 'image/jpeg' });
-        const downloadURL = await getDownloadURL(storageRef);
-        return downloadURL;
+        return await getDownloadURL(storageRef);
     } catch (e) {
         console.error("Image upload failed:", e);
-        throw e; // Re-throw to handle in UI
+        throw e;
     }
   },
 
   async saveRecipe(recipe: Recipe): Promise<void> {
-    let savedToCloud = false;
-    
     if (db) {
       try {
         await setDoc(doc(db, "recipes", recipe.id), recipe);
-        savedToCloud = true;
-        
-        if (analytics) {
-            logEvent(analytics, 'save_recipe', { title: recipe.title, category: recipe.category });
-        }
-      } catch(e) {
-        console.error("Error saving to Firebase (saving locally instead):", e);
-      }
+        if (analytics) logEvent(analytics, 'save_recipe', { title: recipe.title });
+      } catch(e) { console.error("Firebase save failed", e); }
     }
-
-    // Always sync to local storage as backup/cache
     const currentStr = localStorage.getItem('shirleys_kitchen_recipes');
     let current: Recipe[] = currentStr ? JSON.parse(currentStr) : [];
-    
-    // If we have initial recipes loaded but not in local storage yet, we might need to fetch them from state
-    // But here we just manage the array in local storage
     const exists = current.find(r => r.id === recipe.id);
-    let updated;
-    if (exists) {
-      updated = current.map(r => r.id === recipe.id ? recipe : r);
-    } else {
-      updated = [...current, recipe];
-    }
+    const updated = exists ? current.map(r => r.id === recipe.id ? recipe : r) : [...current, recipe];
     localStorage.setItem('shirleys_kitchen_recipes', JSON.stringify(updated));
-  },
-
-  async deleteRecipe(id: string): Promise<void> {
-    if (db) {
-      try {
-        await deleteDoc(doc(db, "recipes", id));
-      } catch (e) {
-        console.error("Error deleting from Firebase:", e);
-      }
-    }
-    
-    // Always update local
-    const currentStr = localStorage.getItem('shirleys_kitchen_recipes');
-    if (currentStr) {
-      const current: Recipe[] = JSON.parse(currentStr);
-      const updated = current.filter(r => r.id !== id);
-      localStorage.setItem('shirleys_kitchen_recipes', JSON.stringify(updated));
-    }
   }
 };
 
-// --- Data ---
+// --- Initial Data ---
 export const INITIAL_RECIPES: Recipe[] = [
   {
     id: "moms-yeast-rolls",
@@ -502,28 +434,13 @@ export const INITIAL_RECIPES: Recipe[] = [
   }
 ];
 
-// --- Styles for MacIntosh Red Tartan (Heritage Intro) ---
-const tartanStyles = {
-  backgroundColor: '#cc0000', // MacIntosh Red Base
-  backgroundImage: `
-    repeating-linear-gradient(90deg, rgba(0, 50, 0, 0.5) 0px, rgba(0, 50, 0, 0.5) 50px, transparent 50px, transparent 110px),
-    repeating-linear-gradient(0deg, rgba(0, 50, 0, 0.5) 0px, rgba(0, 50, 0, 0.5) 50px, transparent 50px, transparent 110px),
-    
-    repeating-linear-gradient(90deg, rgba(0, 0, 80, 0.5) 50px, rgba(0, 0, 80, 0.5) 70px, transparent 70px, transparent 110px),
-    repeating-linear-gradient(0deg, rgba(0, 0, 80, 0.5) 50px, rgba(0, 0, 80, 0.5) 70px, transparent 70px, transparent 110px),
-    
-    repeating-linear-gradient(90deg, transparent 0px, transparent 25px, rgba(255, 215, 0, 0.8) 25px, rgba(255, 215, 0, 0.8) 27px, transparent 27px, transparent 110px),
-    repeating-linear-gradient(0deg, transparent 0px, transparent 25px, rgba(255, 215, 0, 0.8) 25px, rgba(255, 215, 0, 0.8) 27px, transparent 27px, transparent 110px)
-  `
-};
-
 const FAMILY_MEMBERS = ['Nan', 'Wade', 'Donetta', 'Adrienne'];
 
 const OWNER_COLORS: Record<string, string> = {
-  'Nan': '#b45309',      // Amber-700
-  'Wade': '#0369a1',     // Sky-700
-  'Donetta': '#be185d',  // Pink-700
-  'Adrienne': '#7e22ce', // Purple-700
+  'Nan': '#b45309',
+  'Wade': '#0369a1',
+  'Donetta': '#be185d',
+  'Adrienne': '#7e22ce',
 };
 
 const CATEGORY_IMAGES: Record<Category, string> = {
@@ -536,41 +453,18 @@ const CATEGORY_IMAGES: Record<Category, string> = {
   [Category.SAUCES]: "https://images.unsplash.com/photo-1472476443507-c7a392dd6182?auto=format&fit=crop&q=80&w=800",
 };
 
-const AVATAR_COLORS = [
-  '#b91c1c', // Red (Heritage)
-  '#15803d', // Green (Heritage)
-  '#b45309', // Amber (Heritage)
-  '#0369a1', // Sky 700 (Theme)
-  '#334155', // Slate (Neutral)
-  '#4338ca', // Indigo
-  '#be185d', // Pink
-  '#854d0e', // Bronze
-  '#0f766e', // Teal
-  '#7e22ce', // Purple
-];
+const AVATAR_COLORS = ['#b91c1c', '#15803d', '#b45309', '#0369a1', '#334155', '#4338ca', '#be185d', '#854d0e', '#0f766e', '#7e22ce'];
 
-// Deterministic color generator based on name
 const getAvatarColor = (name: string, explicitColor?: string) => {
   if (explicitColor) return explicitColor;
   if (OWNER_COLORS[name]) return OWNER_COLORS[name];
-  
   let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  const index = Math.abs(hash) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index];
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 };
 
-// --- Components ---
-
 const Toast: React.FC<{ message: string; type: 'success' | 'error'; onClose: () => void }> = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
+  useEffect(() => { const timer = setTimeout(onClose, 4000); return () => clearTimeout(timer); }, [onClose]);
   return (
     <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl animate-slide-up ${type === 'success' ? 'bg-stone-900 text-white' : 'bg-red-600 text-white'}`}>
        {type === 'success' ? <CheckCircle size={20} className="text-green-400" /> : <AlertCircle size={20} className="text-white" />}
@@ -582,76 +476,31 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error'; onClose: () 
 
 const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const [imgError, setImgError] = useState(false);
-
   return (
-    <div style={tartanStyles} className="flex flex-col items-center justify-start min-h-screen w-full relative overflow-y-auto pb-20">
-      <div className="absolute inset-0 bg-black/30 fixed"></div>
-      
+    <div style={{ backgroundColor: '#cc0000' }} className="flex flex-col items-center justify-start min-h-screen w-full relative overflow-y-auto pb-20">
       <div className="relative z-10 bg-stone-50/95 p-8 md:p-16 rounded-sm shadow-2xl max-w-4xl mx-4 text-center border-double border-8 border-stone-800 mt-10 md:mt-20 animate-fade-in">
-        {/* Family Crest */}
         <div className="mb-8 flex justify-center">
           <div className="w-40 h-40 md:w-48 md:h-48 relative group perspective-1000">
             {!imgError ? (
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" 
-                alt="MacIntosh Family Crest" 
-                className="w-full h-full object-contain drop-shadow-2xl transform transition-transform duration-700 group-hover:rotate-y-12"
-                onError={() => setImgError(true)}
-              />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" 
+                alt="MacIntosh Family Crest" className="w-full h-full object-contain drop-shadow-2xl" onError={() => setImgError(true)} />
             ) : (
-              <div className="w-full h-full bg-red-900 rounded-full flex items-center justify-center text-white font-serif text-xs p-4 text-center border-4 border-amber-500">
-                MacIntosh Family Crest
-              </div>
+              <div className="w-full h-full bg-red-900 rounded-full flex items-center justify-center text-white font-serif text-xs p-4 border-4 border-amber-500">MacIntosh Family Crest</div>
             )}
           </div>
         </div>
-
-        <h1 className="font-serif text-5xl md:text-7xl text-stone-900 mb-2 tracking-tight drop-shadow-sm">Shirley’s Kitchen</h1>
+        <h1 className="font-serif text-5xl md:text-7xl text-stone-900 mb-2">Shirley’s Kitchen</h1>
         <h2 className="font-serif text-3xl md:text-4xl text-red-900 italic mb-6">Cooking with Nan</h2>
-        <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-y border-stone-300 py-2 inline-block">
-          A Cherished Collection of Recipes Passed Down Through Generations
-        </p>
-        
-        <div className="prose prose-stone prose-lg text-stone-700 leading-relaxed text-justify mb-12 mx-auto max-w-2xl bg-stone-100/50 p-6 rounded-lg border border-stone-200 shadow-inner">
-          <p className="mb-4 indent-8">
-            My earliest memories of the kitchen are forged links to my Nan, Shirley MacIntosh. It was her domain, a
-            sanctuary where she moved with quiet, purposeful grace, her hands perpetually busy, creating magic from
-            simple ingredients. This book is a labor of love, a deeply personal compilation of her cherished recipes,
-            each one carrying a piece of her spirit, a story waiting to be retold. It’s dedicated with particular affection
-            to her daughters, who, like myself, were privileged to learn the art of cooking beside her, absorbing not just
-            her techniques but also her quiet wisdom.
-          </p>
-          <p className="indent-8">
-            These recipes are more than mere instructions; they are a tangible connection to her, a way to recreate
-            the flavors and the moments that defined our family gatherings, moments that now feel precious and fleeting
-            in the passage of time. May each dish you prepare from these pages bring a warmth to your home that matches
-            the warmth she so generously shared with all of us.
-          </p>
-        </div>
-
-        <button 
-          onClick={onStart}
-          className="group relative inline-flex items-center justify-center px-10 py-4 font-serif text-lg font-bold text-white transition-all duration-200 bg-red-900 font-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-900 rounded-sm shadow-lg overflow-hidden"
-        >
-          <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
-          <span className="relative flex items-center gap-3">
-             Enter the Kitchen <BookOpen size={24} />
-          </span>
+        <button onClick={onStart} className="px-10 py-4 font-serif text-lg font-bold text-white bg-red-900 rounded-sm shadow-lg hover:bg-red-800 flex items-center gap-3 mx-auto">
+           Enter the Kitchen <BookOpen size={24} />
         </button>
       </div>
-      
-      <footer className="relative z-10 mt-16 text-white/80 font-serif text-sm">
-        Est. 2024 • The MacIntosh Family
-      </footer>
     </div>
   );
 };
 
 const RecipeModal: React.FC<{ 
-  onClose: () => void; 
-  onSave: (recipe: Recipe) => void;
-  initialRecipe?: Recipe | null;
-  notify: (msg: string, type: 'success' | 'error') => void;
+  onClose: () => void; onSave: (recipe: Recipe) => void; initialRecipe?: Recipe | null; notify: (msg: string, type: 'success' | 'error') => void;
 }> = ({ onClose, onSave, initialRecipe, notify }) => {
   const [title, setTitle] = useState(initialRecipe?.title || '');
   const [category, setCategory] = useState<Category>(initialRecipe?.category || Category.MAIN_DISHES);
@@ -669,505 +518,145 @@ const RecipeModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title) return;
-
     let finalImageUrl = initialRecipe?.imageUrl;
-
-    // Check for uploaded image
     if (selectedFile) {
         setUploadingImage(true);
         try {
-            // Resize image first
             const resizedBase64 = await resizeImage(selectedFile);
-            const tempId = initialRecipe?.id || id();
-            // Use DataService to upload
-            finalImageUrl = await DataService.uploadImage(resizedBase64, tempId);
-            notify("Image processed and attached.", "success");
-        } catch (err) {
-            console.error("Image processing failed:", err);
-            notify("Failed to process image. Try a smaller file.", "error");
-        } finally {
-            setUploadingImage(false);
-        }
+            finalImageUrl = await DataService.uploadImage(resizedBase64, initialRecipe?.id || id());
+            notify("Image attached.", "success");
+        } catch (err) { notify("Image failed.", "error"); } 
+        finally { setUploadingImage(false); }
     }
-
-    const newRecipe: Recipe = {
+    onSave({
       id: initialRecipe?.id || id(),
-      title,
-      category,
+      title, category,
       ingredients: ingredients.split('\n').filter(i => i.trim()),
       instructions: instructions.split('\n').filter(i => i.trim()),
-      yields,
-      prepTime,
-      cookTime,
-      temp,
-      description,
-      addedBy,
-      userColor: OWNER_COLORS[addedBy], // Auto-assign color
+      yields, prepTime, cookTime, temp, description, addedBy,
+      userColor: OWNER_COLORS[addedBy],
       timestamp: initialRecipe?.timestamp || Date.now(),
       imageUrl: finalImageUrl
-    };
-    onSave(newRecipe);
+    });
     onClose();
   };
 
   const generateWithAI = async () => {
     const apiKey = getApiKey();
-    if (!apiKey) {
-      notify("Please configure your API Key in .env", "error");
-      return;
-    }
+    if (!apiKey) { notify("API Key missing", "error"); return; }
     setGenerating(true);
     try {
        const ai = new GoogleGenAI({ apiKey });
-       
-       const prompt = `Create a traditional family recipe for ${title || "a random comfort food"} in the style of a grandmother's cookbook. 
-       Return JSON ONLY with fields: title, category (one of: ${Object.values(Category).join(', ')}), description, ingredients (array), instructions (array), yields, prepTime, cookTime, temp.`;
-       
        const response = await ai.models.generateContent({
          model: "gemini-2.5-flash",
-         contents: prompt
+         contents: `Recipe for ${title}. Return JSON only: {title, category, description, ingredients[], instructions[], yields, prepTime, cookTime, temp}`
        });
-       
        const text = response.text;
-       
-       // Simple JSON parsing attempt (stripping code blocks if present)
        if (text) {
-         const jsonStr = text.replace(/```json|```/g, '').trim();
-         const data = JSON.parse(jsonStr);
-         
+         const data = JSON.parse(text.replace(/```json|```/g, '').trim());
          setTitle(data.title);
          if (Object.values(Category).includes(data.category)) setCategory(data.category);
-         setDescription(data.description);
-         setIngredients(data.ingredients.join('\n'));
-         setInstructions(data.instructions.join('\n'));
-         setYields(data.yields || '');
-         setPrepTime(data.prepTime || '');
-         setCookTime(data.cookTime || '');
-         setTemp(data.temp || '');
-         notify("Recipe drafted by AI.", "success");
-         
-         if (analytics) {
-             logEvent(analytics, 'use_ai_draft', { title: data.title });
-         }
+         setDescription(data.description || "");
+         setIngredients(data.ingredients?.join('\n') || "");
+         setInstructions(data.instructions?.join('\n') || "");
+         setYields(data.yields || "");
+         setPrepTime(data.prepTime || "");
+         setCookTime(data.cookTime || "");
+         setTemp(data.temp || "");
+         notify("AI Drafted!", "success");
        }
-       
-    } catch (e) {
-      console.error("AI Generation failed", e);
-      notify("AI Drafting failed. Try again.", "error");
-    } finally {
-      setGenerating(false);
-    }
+    } catch (e) { notify("AI Failed.", "error"); } finally { setGenerating(false); }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-2xl font-serif font-bold text-stone-800">
-            {initialRecipe ? 'Edit Recipe' : 'Add New Recipe'}
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-            <X size={24} className="text-stone-500" />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="col-span-1 md:col-span-2 flex gap-4">
-               <div className="flex-1">
-                 <label className="block text-sm font-medium text-stone-600 mb-1">Recipe Title</label>
-                 <input 
-                   required
-                   value={title}
-                   onChange={(e) => setTitle(e.target.value)}
-                   className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none font-serif text-lg"
-                   placeholder="e.g., Nan's Apple Pie"
-                 />
-               </div>
-               {!initialRecipe && (
-                 <button 
-                  type="button"
-                  onClick={generateWithAI}
-                  disabled={generating}
-                  className="mt-6 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md flex items-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-md"
-                 >
-                   {generating ? <RefreshCw className="animate-spin" size={20}/> : <ChefHat size={20}/>}
-                   AI Draft
-                 </button>
-               )}
+        <div className="flex justify-between items-center p-6 border-b"><h2 className="text-2xl font-serif font-bold">{initialRecipe ? 'Edit' : 'Add'} Recipe</h2><button onClick={onClose}><X /></button></div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 flex-1">
+            <div className="flex gap-4">
+               <input value={title} onChange={e => setTitle(e.target.value)} className="flex-1 p-2 border rounded" placeholder="Title" required />
+               {!initialRecipe && <button type="button" onClick={generateWithAI} disabled={generating} className="p-2 bg-purple-600 text-white rounded">{generating ? "..." : <ChefHat size={18}/>}</button>}
             </div>
-
-            <div className="col-span-1">
-               <label className="block text-sm font-medium text-stone-600 mb-1">Category</label>
-               <select 
-                 value={category}
-                 onChange={(e) => setCategory(e.target.value as Category)}
-                 className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none bg-white"
-               >
-                 {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
-               </select>
+            <div className="grid grid-cols-2 gap-4">
+               <select value={category} onChange={e => setCategory(e.target.value as Category)} className="p-2 border rounded">{Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}</select>
+               <select value={addedBy} onChange={e => setAddedBy(e.target.value)} className="p-2 border rounded">{FAMILY_MEMBERS.map(m => <option key={m} value={m}>{m}</option>)}</select>
             </div>
-            
-            <div className="col-span-1">
-               <label className="block text-sm font-medium text-stone-600 mb-1">Recipe Owner</label>
-               <div className="relative">
-                 <select
-                    value={addedBy}
-                    onChange={(e) => setAddedBy(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none bg-white appearance-none"
-                 >
-                    {FAMILY_MEMBERS.map(member => (
-                      <option key={member} value={member}>{member}</option>
-                    ))}
-                 </select>
-                 <ChevronDown className="absolute right-3 top-3 text-stone-400 pointer-events-none" size={16} />
-               </div>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full p-2 border rounded" placeholder="Description" />
+            <div className="border border-dashed p-4 text-center rounded"><input type="file" onChange={e => e.target.files && setSelectedFile(e.target.files[0])} /><p>{selectedFile ? selectedFile.name : "Upload Photo"}</p></div>
+            <div className="grid grid-cols-2 gap-4">
+                <input placeholder="Prep Time" value={prepTime} onChange={e => setPrepTime(e.target.value)} className="p-2 border rounded" />
+                <input placeholder="Cook Time" value={cookTime} onChange={e => setCookTime(e.target.value)} className="p-2 border rounded" />
+                <input placeholder="Temp" value={temp} onChange={e => setTemp(e.target.value)} className="p-2 border rounded" />
+                <input placeholder="Yields" value={yields} onChange={e => setYields(e.target.value)} className="p-2 border rounded" />
             </div>
-
-            <div className="col-span-1 md:col-span-2">
-               <label className="block text-sm font-medium text-stone-600 mb-1">Description / Subtitle</label>
-               <input 
-                 value={description}
-                 onChange={(e) => setDescription(e.target.value)}
-                 className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none"
-                 placeholder="A short story or description..."
-               />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <textarea value={ingredients} onChange={e => setIngredients(e.target.value)} rows={5} className="p-2 border rounded" placeholder="Ingredients (one per line)" required />
+                <textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} className="p-2 border rounded" placeholder="Instructions (one per line)" required />
             </div>
-
-             <div className="col-span-1 md:col-span-2">
-               <label className="block text-sm font-medium text-stone-600 mb-1">Photo Upload</label>
-               <div className="border-2 border-dashed border-stone-300 rounded-md p-4 text-center hover:bg-stone-50 transition-colors relative">
-                  <input type="file" id="image-upload" accept="image/*" className="hidden" onChange={(e) => {
-                      if(e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        // Simple validation
-                        if(file.size > 10 * 1024 * 1024) {
-                            notify("File too large. Max 10MB.", "error");
-                            e.target.value = "";
-                        } else {
-                            setSelectedFile(file);
-                            notify("Photo selected: " + file.name, "success");
-                        }
-                      }
-                  }}/>
-                  <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center gap-2 text-stone-500">
-                      <ImageIcon size={32} className={selectedFile ? "text-green-500" : "text-stone-400"} />
-                      <span className="text-sm font-medium">
-                        {selectedFile ? selectedFile.name : "Click to upload a photo of this dish"}
-                      </span>
-                  </label>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 col-span-1 md:col-span-2">
-              <input placeholder="Prep Time" value={prepTime} onChange={e => setPrepTime(e.target.value)} className="px-3 py-2 border rounded-md" />
-              <input placeholder="Cook Time" value={cookTime} onChange={e => setCookTime(e.target.value)} className="px-3 py-2 border rounded-md" />
-              <input placeholder="Oven Temp" value={temp} onChange={e => setTemp(e.target.value)} className="px-3 py-2 border rounded-md" />
-              <input placeholder="Yields" value={yields} onChange={e => setYields(e.target.value)} className="px-3 py-2 border rounded-md" />
-            </div>
-
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium text-stone-600 mb-1">Ingredients (one per line)</label>
-              <textarea 
-                required
-                value={ingredients}
-                onChange={(e) => setIngredients(e.target.value)}
-                rows={6}
-                className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none font-mono text-sm"
-                placeholder={"1 cup Flour\n2 Eggs\n..."}
-              />
-            </div>
-
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium text-stone-600 mb-1">Instructions (one step per line)</label>
-              <textarea 
-                required
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                rows={6}
-                className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-amber-500 outline-none"
-                placeholder={"Mix dry ingredients.\nAdd wet ingredients.\nBake at 350..."}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6 border-t mt-4">
-            <button type="button" onClick={onClose} className="px-6 py-2 text-stone-600 hover:bg-stone-100 rounded-md">
-              Cancel
-            </button>
-            <button type="submit" disabled={uploadingImage} className="px-6 py-2 bg-stone-800 text-white rounded-md hover:bg-stone-700 shadow-lg disabled:opacity-50 flex items-center gap-2">
-              {uploadingImage && <RefreshCw className="animate-spin" size={16} />}
-              {initialRecipe ? 'Save Changes' : 'Add Recipe'}
-            </button>
-          </div>
+            <div className="flex justify-end gap-2"><button type="button" onClick={onClose} className="px-4 py-2 border rounded">Cancel</button><button type="submit" className="px-4 py-2 bg-stone-900 text-white rounded" disabled={uploadingImage}>{uploadingImage ? "Uploading..." : "Save"}</button></div>
         </form>
       </div>
     </div>
   );
 };
 
-const RecipeDetail: React.FC<{ 
-  recipe: Recipe; 
-  onBack: () => void;
-  onEdit: (r: Recipe) => void;
-  isFavorite: boolean;
-  toggleFavorite: () => void;
-  notify: (msg: string, type: 'success' | 'error') => void;
-}> = ({ recipe, onBack, onEdit, isFavorite, toggleFavorite, notify }) => {
-  const [tips, setTips] = useState<string>("");
+const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; onEdit: (r: Recipe) => void; isFavorite: boolean; toggleFavorite: () => void; notify: (msg: string, type: 'success' | 'error') => void; }> = ({ recipe, onBack, onEdit, isFavorite, toggleFavorite, notify }) => {
+  const [tips, setTips] = useState("");
   const [loadingTips, setLoadingTips] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(recipe.imageUrl || null);
-  const [generatingImage, setGeneratingImage] = useState(false);
-
-  useEffect(() => {
-    if (analytics) {
-        logEvent(analytics, 'view_item', { 
-            currency: 'USD', 
-            value: 1, 
-            items: [{ item_id: recipe.id, item_name: recipe.title, item_category: recipe.category }] 
-        });
-    }
-  }, [recipe]);
 
   const getGeminiTips = async () => {
     const apiKey = getApiKey();
-    if (!apiKey) {
-      setTips("Please set API_KEY in .env");
-      notify("API Key missing", "error");
-      return;
-    }
+    if (!apiKey) { notify("API Key missing", "error"); return; }
     setLoadingTips(true);
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: `Give me 3 short, secret chef tips for making the best ${recipe.title}.`
-      });
-      if (response.text) {
-        setTips(response.text);
-        if (analytics) logEvent(analytics, 'get_chef_tips', { recipe: recipe.title });
-      }
-    } catch (e) {
-      console.error(e);
-      setTips("Could not load tips at this time.");
-      notify("Failed to get tips", "error");
-    } finally {
-      setLoadingTips(false);
-    }
-  };
-
-  const handleGenerateImage = async () => {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        notify("API Key missing", "error");
-        return;
-    }
-    setGeneratingImage(true);
-    try {
-        // Using Imagen 3 via fetch since SDK might be limited in preview
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                instances: [{ prompt: `A professional, appetizing food photography shot of ${recipe.title}, ${recipe.description || "delicious home cooked meal"}, warm lighting, 4k, high detail.` }],
-                parameters: { sampleCount: 1, aspectRatio: "4:3" }
-            })
-        });
-        const data = await response.json();
-        const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-        if (b64) {
-            // Upload to Firebase Storage or save locally
-            // Ideally we upload to avoid data url size limits in Firestore
-            const url = await DataService.uploadImage(b64, recipe.id);
-            setImageUrl(url);
-            
-            // Save to recipe object persistence
-            const updated = { ...recipe, imageUrl: url };
-            await DataService.saveRecipe(updated);
-            notify("Image generated and saved!", "success");
-            
-            if (analytics) logEvent(analytics, 'generate_image', { recipe: recipe.title });
-        } else {
-             throw new Error("No image data returned");
-        }
-    } catch(e) {
-        console.error("Image gen failed", e);
-        notify("Could not generate image. Check limits.", "error");
-    } finally {
-        setGeneratingImage(false);
-    }
+      const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: `3 chef tips for ${recipe.title}` });
+      if (response.text) setTips(response.text);
+    } catch { notify("Tips failed", "error"); } finally { setLoadingTips(false); }
   };
 
   return (
-    <div className="bg-white min-h-screen animate-fade-in pb-20 print:pb-0">
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          @page { margin: 2cm; }
-          body { -webkit-print-color-adjust: exact; }
-          .no-print { display: none !important; }
-          .print-only { display: block !important; }
-          .print-break-inside-avoid { break-inside: avoid; }
-        }
-        .print-only { display: none; }
-      `}</style>
-
-      {/* Print Header */}
-      <div className="print-only fixed top-0 left-0 w-full border-b-2 border-black pb-4 mb-8">
-         <div className="flex justify-between items-end">
-            <h1 className="text-3xl font-serif font-bold">Shirley's Kitchen</h1>
-            <span className="text-sm text-stone-600">Family Recipe Collection</span>
-         </div>
-      </div>
-
-      {/* Print Footer */}
-      <div className="print-only fixed bottom-0 left-0 w-full border-t border-stone-300 pt-2">
-         <div className="flex justify-between text-xs text-stone-500">
-            <span>Printed from Shirley's Kitchen App</span>
-            <span className="after:content-[counter(page)]">Page </span>
-         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto md:p-8 md:pt-12 print:p-0 print:pt-20">
-        <button onClick={onBack} className="no-print mb-6 flex items-center text-stone-500 hover:text-amber-700 transition-colors px-4 md:px-0">
-          <ArrowLeft size={20} className="mr-2" /> Back to Recipes
-        </button>
-
-        <div className="bg-stone-50 md:shadow-2xl md:rounded-lg overflow-hidden border border-stone-200 print:shadow-none print:border-none print:bg-white">
-          {/* Header Image Area */}
-          <div className="relative h-64 md:h-80 bg-stone-200 group no-print">
-            {imageUrl ? (
-                <img src={imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
-            ) : (
-                <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-400">
-                    <UtensilsCrossed size={64} opacity={0.2} />
-                </div>
-            )}
-            
-            {/* Image Actions */}
+    <div className="bg-white min-h-screen pb-20 print:pb-0">
+      <style>{`@media print { @page { margin: 2cm; } .no-print { display: none !important; } .print-only { display: block !important; } } .print-only { display: none; }`}</style>
+      <div className="print-only fixed top-0 w-full border-b pb-4 mb-8"><h1 className="text-3xl font-serif">Shirley's Kitchen</h1></div>
+      <div className="print-only fixed bottom-0 w-full border-t pt-2 text-xs">Page <span className="after:content-[counter(page)]"></span></div>
+      <div className="max-w-4xl mx-auto md:p-8">
+        <button onClick={onBack} className="no-print mb-6 flex items-center text-stone-500"><ArrowLeft size={20} /> Back</button>
+        <div className="bg-stone-50 md:rounded-lg overflow-hidden border border-stone-200 print:border-none">
+          <div className="relative h-64 md:h-80 bg-stone-200 no-print">
+            {recipe.imageUrl ? <img src={recipe.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-stone-400"><UtensilsCrossed size={64} opacity={0.2} /></div>}
             <div className="absolute top-4 right-4 flex gap-2">
-                <button 
-                  onClick={toggleFavorite}
-                  className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all text-red-500"
-                >
-                  <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
-                </button>
-                <button 
-                  onClick={() => onEdit(recipe)}
-                  className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all text-stone-700"
-                >
-                  <Edit2 size={20} />
-                </button>
-                <button 
-                   onClick={() => window.print()}
-                   className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all text-stone-700"
-                >
-                   <Printer size={20} />
-                </button>
+                <button onClick={toggleFavorite} className="p-3 bg-white/90 rounded-full text-red-500"><Heart size={20} fill={isFavorite ? "currentColor" : "none"} /></button>
+                <button onClick={() => onEdit(recipe)} className="p-3 bg-white/90 rounded-full"><Edit2 size={20} /></button>
+                <button onClick={() => window.print()} className="p-3 bg-white/90 rounded-full"><Printer size={20} /></button>
             </div>
-            
-            {/* Generate Image Button */}
-            {!imageUrl && (
-                <button 
-                  onClick={handleGenerateImage}
-                  disabled={generatingImage}
-                  className="absolute bottom-4 right-4 px-4 py-2 bg-black/50 text-white backdrop-blur-md rounded-full text-sm hover:bg-black/70 flex items-center gap-2"
-                >
-                  {generatingImage ? <RefreshCw className="animate-spin" size={14}/> : <ImageIcon size={14}/>}
-                  Generate Photo
-                </button>
-            )}
           </div>
-
-          <div className="p-6 md:p-10 print:p-0">
-            {/* Title Section */}
-            <div className="text-center mb-8 border-b-2 border-stone-200 pb-6">
-               <span className="text-amber-600 font-bold tracking-wider text-xs uppercase mb-2 block">{recipe.category}</span>
-               <h1 className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-4">{recipe.title}</h1>
-               {recipe.description && <p className="text-stone-600 italic text-lg font-serif">{recipe.description}</p>}
-               
-               <div className="flex flex-wrap justify-center gap-6 mt-6 text-stone-500 text-sm uppercase tracking-wide font-bold">
-                  {recipe.prepTime && <span className="flex items-center gap-2"><Clock size={16}/> Prep: {recipe.prepTime}</span>}
-                  {recipe.cookTime && <span className="flex items-center gap-2"><UtensilsCrossed size={16}/> Cook: {recipe.cookTime}</span>}
-                  {recipe.yields && <span className="flex items-center gap-2"><ChefHat size={16}/> Yields: {recipe.yields}</span>}
-                  {recipe.temp && <span className="flex items-center gap-2"><Thermometer size={16}/> {recipe.temp}</span>}
+          <div className="p-6 md:p-10">
+            <div className="text-center mb-8 border-b pb-6">
+               <span className="text-amber-600 font-bold text-xs uppercase">{recipe.category}</span>
+               <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">{recipe.title}</h1>
+               <p className="text-stone-600 italic">{recipe.description}</p>
+               <div className="flex justify-center gap-6 mt-6 text-stone-500 text-sm font-bold uppercase">
+                  {recipe.prepTime && <span>Prep: {recipe.prepTime}</span>}
+                  {recipe.cookTime && <span>Cook: {recipe.cookTime}</span>}
+                  {recipe.yields && <span>Yields: {recipe.yields}</span>}
                </div>
             </div>
-
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-              
-              {/* Ingredients Column */}
-              <div className="md:col-span-1 print:col-span-1">
-                <h3 className="text-xl font-serif font-bold text-stone-800 mb-4 flex items-center gap-2 pb-2 border-b border-stone-200">
-                  Ingredients
-                </h3>
-                <ul className="space-y-3 font-serif text-stone-700">
-                  {recipe.ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-start gap-3 leading-relaxed group">
-                       <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:bg-amber-600 transition-colors shrink-0"></span>
-                       <span>{ing}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Instructions Column */}
-              <div className="md:col-span-2 print:col-span-2">
-                <h3 className="text-xl font-serif font-bold text-stone-800 mb-4 flex items-center gap-2 pb-2 border-b border-stone-200">
-                  Instructions
-                </h3>
-                <div className="space-y-6">
-                  {recipe.instructions.map((step, i) => (
-                    <div key={i} className="flex gap-4 print-break-inside-avoid">
-                      <span className="flex-shrink-0 w-8 h-8 rounded-full bg-stone-100 text-stone-500 font-serif font-bold flex items-center justify-center border border-stone-200">
-                        {i + 1}
-                      </span>
-                      <p className="text-stone-700 leading-relaxed pt-1">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+            <div className="grid md:grid-cols-3 gap-8">
+              <div><h3 className="text-xl font-bold mb-4 border-b pb-2">Ingredients</h3><ul className="space-y-2">{recipe.ingredients.map((i, k) => <li key={k} className="flex gap-2"><span className="text-amber-500">•</span>{i}</li>)}</ul></div>
+              <div className="md:col-span-2"><h3 className="text-xl font-bold mb-4 border-b pb-2">Instructions</h3><div className="space-y-4">{recipe.instructions.map((s, k) => <div key={k} className="flex gap-4"><span className="font-bold text-stone-400">{k+1}</span><p>{s}</p></div>)}</div></div>
             </div>
-
-            {/* Footer / Meta */}
-            <div className="mt-12 pt-6 border-t border-stone-200 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm" style={{ backgroundColor: getAvatarColor(recipe.addedBy, recipe.userColor) }}>
-                    {recipe.addedBy[0]}
-                  </div>
-                  <div className="text-sm">
-                    <p className="text-stone-900 font-bold">From the Kitchen of {recipe.addedBy}</p>
-                    <p className="text-stone-500 text-xs">Added on {new Date(recipe.timestamp).toLocaleDateString()}</p>
-                  </div>
-               </div>
-
-               <button 
-                 onClick={getGeminiTips}
-                 disabled={loadingTips}
-                 className="flex items-center gap-2 text-amber-600 hover:text-amber-700 font-bold text-sm transition-colors"
-               >
-                 <ChefHat size={18} />
-                 {loadingTips ? "Consulting Chef..." : "Get Chef's Tips"}
-               </button>
+            <div className="mt-12 pt-6 border-t flex justify-between items-center no-print">
+               <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: getAvatarColor(recipe.addedBy, recipe.userColor) }}>{recipe.addedBy[0]}</div><span className="font-bold text-sm">By {recipe.addedBy}</span></div>
+               <button onClick={getGeminiTips} disabled={loadingTips} className="text-amber-600 font-bold flex gap-2"><ChefHat size={18}/> {loadingTips ? "Thinking..." : "Chef Tips"}</button>
             </div>
-
-            {tips && (
-              <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-lg animate-fade-in no-print">
-                <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2"><ChefHat size={16}/> Chef's Secret Tips</h4>
-                <p className="text-amber-900/80 text-sm whitespace-pre-line leading-relaxed">{tips}</p>
-              </div>
-            )}
+            {tips && <div className="mt-6 p-4 bg-amber-50 rounded no-print"><h4 className="font-bold text-amber-800 flex gap-2 mb-2"><ChefHat size={16}/> Tips</h4><p className="text-sm whitespace-pre-line">{tips}</p></div>}
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-// --- App Main Component ---
 
 export default function App() {
   const [view, setView] = useState<'intro' | 'home' | 'category' | 'detail'>('intro');
@@ -1181,405 +670,101 @@ export default function App() {
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showDevData, setShowDevData] = useState(false);
-  
-  // Notification System State
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  const notify = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-  };
+  const notify = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
 
-  // Initialize Data
   useEffect(() => {
     const init = async () => {
       const data = await DataService.getRecipes();
-      if (data.length > 0) {
-        setRecipes(data);
-      } else {
-        // First run, save initial to local storage so user can edit them
-        localStorage.setItem('shirleys_kitchen_recipes', JSON.stringify(INITIAL_RECIPES));
-        setRecipes(INITIAL_RECIPES);
-      }
-      
-      const storedFavs = localStorage.getItem('favorites');
-      if (storedFavs) setFavorites(new Set(JSON.parse(storedFavs)));
+      setRecipes(data.length > 0 ? data : INITIAL_RECIPES);
+      const favs = localStorage.getItem('favorites');
+      if (favs) setFavorites(new Set(JSON.parse(favs)));
     };
     init();
   }, []);
 
-  // Filter Logic
-  const filteredRecipes = useMemo(() => {
-    let result = recipes;
-    if (selectedCategory) {
-      result = result.filter(r => r.category === selectedCategory);
-    } else if (view === 'category' && !selectedCategory) {
-      // "All Recipes" view usually
-    }
-    
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(r => 
-        r.title.toLowerCase().includes(q) || 
-        r.ingredients.some(i => i.toLowerCase().includes(q))
-      );
-    }
-    return result;
-  }, [recipes, selectedCategory, searchQuery, view]);
-
-  // Counts
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    recipes.forEach(r => {
-      c[r.category] = (c[r.category] || 0) + 1;
-    });
-    return c;
-  }, [recipes]);
-
-  const handleSaveRecipe = async (newRecipe: Recipe) => {
-    let updatedList;
-    if (editingRecipe) {
-      updatedList = recipes.map(r => r.id === newRecipe.id ? newRecipe : r);
-    } else {
-      updatedList = [...recipes, newRecipe];
-    }
-    setRecipes(updatedList);
-    await DataService.saveRecipe(newRecipe);
-    setEditingRecipe(null);
-    if (selectedRecipe?.id === newRecipe.id) {
-        setSelectedRecipe(newRecipe);
-    }
-    notify("Recipe saved successfully!", "success");
-  };
+  const filtered = useMemo(() => {
+    let res = selectedCategory ? recipes.filter(r => r.category === selectedCategory) : recipes;
+    if (searchQuery) res = res.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    return res;
+  }, [recipes, selectedCategory, searchQuery]);
 
   const toggleFavorite = (id: string) => {
-    const newFavs = new Set(favorites);
-    if (newFavs.has(id)) newFavs.delete(id);
-    else newFavs.add(id);
-    setFavorites(newFavs);
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavs)));
-    
-    if (analytics && newFavs.has(id)) {
-        logEvent(analytics, 'add_to_favorites', { recipe_id: id });
-    }
+    const next = new Set(favorites);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setFavorites(next);
+    localStorage.setItem('favorites', JSON.stringify(Array.from(next)));
   };
 
-  // Views
+  const handleSave = async (r: Recipe) => {
+    const next = editingRecipe ? recipes.map(x => x.id === r.id ? r : x) : [...recipes, r];
+    setRecipes(next);
+    await DataService.saveRecipe(r);
+    setEditingRecipe(null);
+    if (selectedRecipe?.id === r.id) setSelectedRecipe(r);
+    notify("Saved!", "success");
+  };
+
   if (view === 'intro') return <Intro onStart={() => setView('home')} />;
-  if (view === 'detail' && selectedRecipe) return (
-    <>
-      <RecipeDetail 
-        recipe={selectedRecipe} 
-        onBack={() => setView(selectedCategory ? 'category' : 'home')} 
-        onEdit={(r) => { setEditingRecipe(r); setIsModalOpen(true); }}
-        isFavorite={favorites.has(selectedRecipe.id)}
-        toggleFavorite={() => toggleFavorite(selectedRecipe.id)}
-        notify={notify}
-      />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </>
-  );
+  if (view === 'detail' && selectedRecipe) return <><RecipeDetail recipe={selectedRecipe} onBack={() => setView('home')} onEdit={r => { setEditingRecipe(r); setIsModalOpen(true); }} isFavorite={favorites.has(selectedRecipe.id)} toggleFavorite={() => toggleFavorite(selectedRecipe.id)} notify={notify} />{toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}</>;
 
   return (
-    <div className="flex h-screen bg-stone-50 overflow-hidden font-sans text-stone-800">
-      
-      {/* Sidebar (Desktop) */}
-      <aside className={`fixed md:relative z-30 w-64 bg-stone-900 text-stone-300 h-full flex flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="p-6 border-b border-stone-800 flex justify-between items-center">
-          <h2 className="font-serif text-2xl text-white font-bold tracking-tight">Shirley's Kitchen</h2>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden"><X /></button>
-        </div>
-        
-        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
-          <button onClick={() => { setView('home'); setSelectedCategory(null); setIsSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors ${view === 'home' ? 'bg-stone-800 text-white' : 'hover:bg-stone-800/50'}`}>
-            <span className="flex items-center gap-3"><Home size={18} /> Home</span>
-          </button>
-          
-          <button onClick={() => { setView('category'); setSelectedCategory(null); setIsSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors ${view === 'category' && !selectedCategory ? 'bg-stone-800 text-white' : 'hover:bg-stone-800/50'}`}>
-            <span className="flex items-center gap-3"><BookOpen size={18} /> All Recipes</span>
-            <span className="text-xs bg-stone-800 px-2 py-0.5 rounded-full">{recipes.length}</span>
-          </button>
-
-          <div className="pt-6 pb-2 px-3 text-xs font-bold text-stone-500 uppercase tracking-wider">Categories</div>
-          
-          {Object.values(Category).map(cat => (
-            <button 
-              key={cat}
-              onClick={() => { setSelectedCategory(cat); setView('category'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${selectedCategory === cat ? 'bg-amber-900/40 text-amber-50' : 'hover:bg-stone-800/50'}`}
-            >
-              <span>{cat}</span>
-              <span className="text-xs text-stone-500">{counts[cat] || 0}</span>
-            </button>
-          ))}
-          
-           <div className="pt-6 pb-2 px-3 text-xs font-bold text-stone-500 uppercase tracking-wider">My Collection</div>
-           <button onClick={() => { /* Filter for favorites */ }} className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-stone-800/50">
-             <span className="flex items-center gap-3 text-rose-400"><Heart size={18} /> Favorites</span>
-             <span className="text-xs bg-stone-800 px-2 py-0.5 rounded-full">{favorites.size}</span>
-           </button>
+    <div className="flex h-screen bg-stone-50 font-sans text-stone-800 overflow-hidden">
+      <aside className={`fixed z-30 w-64 bg-stone-900 text-stone-300 h-full flex flex-col transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-6 flex justify-between"><h2 className="font-bold text-white">Shirley's Kitchen</h2><button onClick={() => setIsSidebarOpen(false)} className="md:hidden"><X /></button></div>
+        <nav className="flex-1 overflow-y-auto px-3 space-y-1">
+          <button onClick={() => { setView('home'); setSelectedCategory(null); }} className="w-full flex gap-3 px-3 py-2 hover:bg-stone-800 rounded"><Home size={18}/> Home</button>
+          <div className="pt-4 pb-2 px-3 text-xs font-bold uppercase">Categories</div>
+          {Object.values(Category).map(c => <button key={c} onClick={() => { setSelectedCategory(c); setView('category'); setIsSidebarOpen(false); }} className={`w-full flex justify-between px-3 py-2 text-sm rounded hover:bg-stone-800 ${selectedCategory === c ? 'bg-stone-800 text-white' : ''}`}><span>{c}</span><span className="text-xs text-stone-500">{recipes.filter(r => r.category === c).length}</span></button>)}
         </nav>
-        
-        <div className="p-4 border-t border-stone-800">
-           <button onClick={() => setShowDevData(true)} className="flex items-center gap-2 text-xs text-stone-500 hover:text-stone-300 w-full justify-center py-2">
-             <Database size={12} /> Developer Data
-           </button>
-        </div>
+        <div className="p-4"><button onClick={() => setShowDevData(true)} className="flex gap-2 text-xs justify-center w-full"><Database size={12}/> Data</button></div>
       </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-stone-900 text-white p-4 flex items-center justify-between shrink-0">
-          <button onClick={() => setIsSidebarOpen(true)}><Menu /></button>
-          <span className="font-serif font-bold">Shirley's Kitchen</span>
-          <button onClick={() => { setEditingRecipe(null); setIsModalOpen(true); }}><Plus /></button>
-        </div>
-
-        {/* Top Bar (Search & Actions) */}
-        <header className="bg-white border-b border-stone-200 p-4 md:px-8 md:py-6 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0 shadow-sm z-10">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-            <input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search recipes, ingredients..." 
-              className="w-full pl-10 pr-4 py-2 bg-stone-100 border-none rounded-full focus:ring-2 focus:ring-amber-500 outline-none text-stone-700"
-            />
-          </div>
-          
-          <div className="flex items-center gap-3 w-full md:w-auto">
-             {/* View Toggle */}
-             {view === 'category' && (
-                <div className="flex bg-stone-100 p-1 rounded-lg">
-                   <button onClick={() => setDisplayMode('grid')} className={`p-2 rounded-md transition-all ${displayMode === 'grid' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><LayoutGrid size={18}/></button>
-                   <button onClick={() => setDisplayMode('list')} className={`p-2 rounded-md transition-all ${displayMode === 'list' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><List size={18}/></button>
+      <main className="flex-1 flex flex-col h-full relative w-full">
+         <div className="md:hidden bg-stone-900 text-white p-4 flex justify-between"><button onClick={() => setIsSidebarOpen(true)}><Menu/></button><span>Shirley's Kitchen</span><button onClick={() => setIsModalOpen(true)}><Plus/></button></div>
+         <header className="bg-white border-b p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full md:w-96"><Search className="absolute left-3 top-2.5 text-stone-400" size={18} /><input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search..." className="w-full pl-10 pr-4 py-2 bg-stone-100 rounded-full" /></div>
+            <div className="flex gap-2">
+               {view === 'category' && <div className="flex bg-stone-100 p-1 rounded"><button onClick={() => setDisplayMode('grid')} className={`p-2 rounded ${displayMode === 'grid' ? 'bg-white shadow' : ''}`}><LayoutGrid size={18}/></button><button onClick={() => setDisplayMode('list')} className={`p-2 rounded ${displayMode === 'list' ? 'bg-white shadow' : ''}`}><List size={18}/></button></div>}
+               <button onClick={() => { setEditingRecipe(null); setIsModalOpen(true); }} className="hidden md:flex gap-2 px-4 py-2 bg-stone-900 text-white rounded-full"><Plus size={18}/> Add</button>
+            </div>
+         </header>
+         <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            {view === 'home' && !searchQuery ? (
+              <div className="space-y-10">
+                <div onClick={() => { setView('category'); setSelectedCategory(null); }} className="relative rounded-2xl overflow-hidden shadow-xl aspect-[21/9] md:aspect-[3/1] cursor-pointer group">
+                  <img src="https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=1600" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-black/40 flex items-end p-8"><h2 className="text-white text-3xl font-serif font-bold">Welcome Home</h2></div>
                 </div>
-             )}
-             
-             <button 
-              onClick={() => { setEditingRecipe(null); setIsModalOpen(true); }}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-full hover:bg-stone-800 transition-shadow shadow-md"
-            >
-              <Plus size={18} /> Add Recipe
-            </button>
-          </div>
-        </header>
-
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-          
-          {/* Dashboard Home View */}
-          {view === 'home' && !searchQuery && (
-            <div className="space-y-10 animate-fade-in">
-              {/* Hero Banner */}
-              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[21/9] md:aspect-[3/1] group cursor-pointer" onClick={() => { setView('category'); setSelectedCategory(null); }}>
-                 <img src="https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=1600" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Kitchen" />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
-                    <div>
-                      <h2 className="text-white text-3xl font-serif font-bold mb-2">Welcome Home</h2>
-                      <p className="text-stone-300">Browse the complete collection of {recipes.length} family recipes.</p>
-                    </div>
-                 </div>
+                <div><h3 className="text-2xl font-serif font-bold mb-6">Browse by Category</h3>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Object.values(Category).map(c => (
+                      <div key={c} onClick={() => { setSelectedCategory(c); setView('category'); }} className="h-40 relative rounded-xl overflow-hidden cursor-pointer group shadow"><img src={CATEGORY_IMAGES[c]} className="w-full h-full object-cover group-hover:scale-110 transition-transform"/><div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2 text-center text-white font-serif font-bold">{c}</div></div>
+                   ))}</div>
+                </div>
               </div>
-
-              {/* Categories Grid */}
+            ) : (
               <div>
-                <h3 className="text-2xl font-serif font-bold text-stone-800 mb-6 flex items-center gap-2">
-                  <BookOpen className="text-amber-600" size={24}/> Browse by Category
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   {Object.values(Category).map(cat => (
-                     <div 
-                        key={cat}
-                        onClick={() => { setSelectedCategory(cat); setView('category'); }}
-                        className="group relative h-40 rounded-xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all"
-                     >
-                        <img src={CATEGORY_IMAGES[cat]} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={cat} />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center p-2 text-center">
-                           <span className="text-white font-serif font-bold text-lg md:text-xl drop-shadow-md">{cat}</span>
+                <h2 className="text-3xl font-serif font-bold mb-8">{searchQuery ? `Results: "${searchQuery}"` : (selectedCategory || "All Recipes")}</h2>
+                <div className={displayMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" : "space-y-2"}>
+                  {filtered.map(r => (
+                     <div key={r.id} onClick={() => { setSelectedRecipe(r); setView('detail'); }} className={`bg-white rounded-xl border overflow-hidden cursor-pointer hover:shadow-lg transition-all ${displayMode === 'list' ? 'flex items-center p-2' : ''}`}>
+                        <div className={displayMode === 'list' ? "w-16 h-16 shrink-0 mr-4 bg-stone-100" : "h-48 bg-stone-100 relative"}>
+                          {r.imageUrl ? <img src={r.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-stone-300"><ChefHat /></div>}
+                        </div>
+                        <div className="p-4 flex-1">
+                           <h3 className="font-serif font-bold text-lg mb-1">{r.title}</h3>
+                           <p className="text-xs text-stone-500">{r.category}</p>
                         </div>
                      </div>
-                   ))}
+                  ))}
                 </div>
               </div>
-
-              {/* Recent Recipes */}
-              <div>
-                 <h3 className="text-2xl font-serif font-bold text-stone-800 mb-6 flex items-center gap-2">
-                    <Clock className="text-amber-600" size={24}/> Recently Added
-                 </h3>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {recipes.slice().sort((a,b) => b.timestamp - a.timestamp).slice(0, 3).map(recipe => (
-                        <div 
-                        key={recipe.id}
-                        onClick={() => { setSelectedRecipe(recipe); setView('detail'); }}
-                        className="bg-white rounded-lg p-4 border border-stone-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-4 items-center group"
-                      >
-                         <div className="w-20 h-20 rounded-md bg-stone-200 overflow-hidden shrink-0">
-                            {recipe.imageUrl ? (
-                                <img src={recipe.imageUrl} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-stone-400"><UtensilsCrossed /></div>
-                            )}
-                         </div>
-                         <div>
-                            <h4 className="font-serif font-bold text-lg group-hover:text-amber-700 transition-colors line-clamp-1">{recipe.title}</h4>
-                            <p className="text-xs text-stone-500 uppercase tracking-wider mb-1">{recipe.category}</p>
-                            <div className="flex items-center gap-2 text-xs text-stone-400">
-                               <User size={12} /> {recipe.addedBy}
-                            </div>
-                         </div>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recipe List View (Category or Search) */}
-          {(view === 'category' || searchQuery) && (
-             <div className="animate-slide-up">
-                <div className="flex items-center justify-between mb-8">
-                   <h2 className="text-3xl font-serif font-bold text-stone-900">
-                      {searchQuery ? `Results for "${searchQuery}"` : (selectedCategory || "All Recipes")}
-                   </h2>
-                   <span className="text-stone-500">{filteredRecipes.length} recipes</span>
-                </div>
-
-                {displayMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredRecipes.map(recipe => (
-                      <div 
-                        key={recipe.id}
-                        onClick={() => { setSelectedRecipe(recipe); setView('detail'); }}
-                        className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
-                      >
-                        <div className="h-48 bg-stone-100 relative overflow-hidden">
-                          {recipe.imageUrl ? (
-                             <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                          ) : (
-                             <div className="w-full h-full flex items-center justify-center text-stone-300">
-                                <ChefHat size={48} strokeWidth={1} />
-                             </div>
-                          )}
-                          <div className="absolute top-3 right-3">
-                             <button onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe.id); }} className="p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white text-stone-400 hover:text-red-500 transition-colors shadow-sm">
-                                <Heart size={16} fill={favorites.has(recipe.id) ? "currentColor" : "none"} className={favorites.has(recipe.id) ? "text-red-500" : ""} />
-                             </button>
-                          </div>
-                        </div>
-                        <div className="p-5 flex-1 flex flex-col">
-                          <div className="flex items-start justify-between mb-2">
-                             <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">{recipe.category}</span>
-                             {recipe.prepTime && <span className="text-xs text-stone-400 flex items-center gap-1"><Clock size={12}/> {recipe.prepTime}</span>}
-                          </div>
-                          <h3 className="font-serif font-bold text-xl text-stone-800 mb-2 leading-tight group-hover:text-amber-800 transition-colors">{recipe.title}</h3>
-                          <p className="text-stone-500 text-sm line-clamp-2 mb-4 flex-1">{recipe.description || recipe.ingredients.slice(0,3).join(', ')}...</p>
-                          
-                          <div className="flex items-center justify-between pt-4 border-t border-stone-100 mt-auto">
-                             <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: getAvatarColor(recipe.addedBy, recipe.userColor) }}>
-                                   {recipe.addedBy[0]}
-                                </div>
-                                <span className="text-xs text-stone-600 font-medium">{recipe.addedBy}</span>
-                             </div>
-                             <ChevronRight size={16} className="text-stone-300 group-hover:text-amber-500 transition-colors" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-                     {filteredRecipes.map((recipe, idx) => (
-                        <div 
-                          key={recipe.id}
-                          onClick={() => { setSelectedRecipe(recipe); setView('detail'); }}
-                          className={`flex items-center p-4 hover:bg-stone-50 cursor-pointer transition-colors ${idx !== filteredRecipes.length - 1 ? 'border-b border-stone-100' : ''}`}
-                        >
-                           <div className="w-16 h-16 rounded-md bg-stone-100 overflow-hidden shrink-0 mr-4">
-                              {recipe.imageUrl ? (
-                                <img src={recipe.imageUrl} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="flex items-center justify-center w-full h-full text-stone-300"><UtensilsCrossed size={20}/></div>
-                              )}
-                           </div>
-                           <div className="flex-1 min-w-0 mr-4">
-                              <h3 className="font-serif font-bold text-lg text-stone-800 truncate">{recipe.title}</h3>
-                              <p className="text-xs text-stone-500">{recipe.category} • {recipe.ingredients.length} ingredients</p>
-                           </div>
-                           <div className="hidden md:flex items-center gap-6 text-sm text-stone-500 mr-4">
-                              {recipe.prepTime && <span className="flex items-center gap-1"><Clock size={14}/> {recipe.prepTime}</span>}
-                              <span className="flex items-center gap-2 px-3 py-1 bg-stone-100 rounded-full text-xs font-bold text-stone-600">
-                                 {recipe.addedBy}
-                              </span>
-                           </div>
-                           <button onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe.id); }} className="text-stone-300 hover:text-red-500 transition-colors">
-                              <Heart size={20} fill={favorites.has(recipe.id) ? "currentColor" : "none"} className={favorites.has(recipe.id) ? "text-red-500" : ""} />
-                           </button>
-                        </div>
-                     ))}
-                  </div>
-                )}
-
-                {filteredRecipes.length === 0 && (
-                   <div className="text-center py-20 text-stone-400">
-                      <Soup size={64} className="mx-auto mb-4 opacity-50" />
-                      <p className="text-lg">No recipes found matching your search.</p>
-                      <button onClick={() => setSearchQuery('')} className="mt-4 text-amber-600 hover:underline">Clear Search</button>
-                   </div>
-                )}
-             </div>
-          )}
-
-        </div>
+            )}
+         </div>
       </main>
-
-      {/* Modals */}
-      {isModalOpen && (
-        <RecipeModal 
-          initialRecipe={editingRecipe}
-          onClose={() => { setIsModalOpen(false); setEditingRecipe(null); }} 
-          onSave={handleSaveRecipe}
-          notify={notify}
-        />
-      )}
-
-      {showDevData && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-           <div className="bg-stone-900 text-stone-300 rounded-lg w-full max-w-3xl h-[80vh] flex flex-col overflow-hidden border border-stone-700 shadow-2xl">
-              <div className="p-4 border-b border-stone-700 flex justify-between items-center bg-stone-950">
-                 <h3 className="font-mono font-bold flex items-center gap-2"><FileJson size={18}/> Developer Data Export</h3>
-                 <button onClick={() => setShowDevData(false)}><X size={20}/></button>
-              </div>
-              <div className="flex-1 overflow-auto p-4 font-mono text-xs bg-black">
-                 <pre className="whitespace-pre-wrap text-green-400">
-                   {JSON.stringify(recipes, null, 2)}
-                 </pre>
-              </div>
-              <div className="p-4 bg-stone-950 border-t border-stone-700 flex justify-end gap-3">
-                 <button 
-                   onClick={() => { navigator.clipboard.writeText(JSON.stringify(recipes, null, 2)); notify("JSON copied to clipboard", "success"); }}
-                   className="px-4 py-2 bg-stone-800 hover:bg-stone-700 rounded text-white flex items-center gap-2"
-                 >
-                    <Copy size={16}/> Copy JSON
-                 </button>
-                 <button 
-                   onClick={() => setShowDevData(false)}
-                   className="px-4 py-2 bg-amber-700 hover:bg-amber-600 rounded text-white"
-                 >
-                    Close
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* Global Toast Container */}
-      {toast && (
-          <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-
+      {isModalOpen && <RecipeModal initialRecipe={editingRecipe} onClose={() => setIsModalOpen(false)} onSave={handleSave} notify={notify} />}
+      {showDevData && <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><div className="bg-stone-900 text-stone-300 p-4 rounded w-full max-w-2xl"><pre className="h-96 overflow-auto text-xs">{JSON.stringify(recipes, null, 2)}</pre><button onClick={() => setShowDevData(false)} className="mt-4 px-4 py-2 bg-amber-700 text-white rounded">Close</button></div></div>}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
