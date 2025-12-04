@@ -1,13 +1,60 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee, Image as ImageIcon, AlertTriangle, ChevronDown } from 'lucide-react';
-import { Recipe, Category, UserColorMap } from './types';
+
+// --- Type Definitions ---
+export interface Recipe {
+  id: string;
+  title: string;
+  category: Category;
+  ingredients: string[];
+  instructions: string[];
+  yields?: string;
+  prepTime?: string;
+  cookTime?: string;
+  temp?: string;
+  description?: string; // Subtitle or extra notes
+  addedBy: string; // "Nan" for original, or user name
+  userColor?: string; // Hex code for user avatar/badge
+  timestamp: number;
+  imageUrl?: string;
+}
+
+export enum Category {
+  APPETIZERS = "Appetizers & Dips",
+  SOUPS_SALADS = "Soups & Salads",
+  BREADS_MUFFINS = "Breads & Muffins",
+  MAIN_DISHES = "Main Dishes",
+  SIDE_DISHES = "Side Dishes",
+  DESSERTS = "Desserts & Baked Goods",
+  SAUCES = "Sauces, Condiments & Extras"
+}
+
+export interface UserColorMap {
+  [username: string]: string;
+}
+
+// --- Helpers ---
 
 // Helper to safely get API Key without crashing if process is undefined (Vercel/Vite issue)
 const getApiKey = () => {
+  // Try retrieving from Vite's import.meta.env (standard for Vercel+Vite)
   try {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      const key = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY;
+      if (key) return key;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // Fallback to process.env (standard Node/Webpack)
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+       const key = process.env.API_KEY || process.env.VITE_API_KEY;
+       if (key) return key;
     }
   } catch (e) {
     // process is not defined
@@ -18,6 +65,7 @@ const getApiKey = () => {
 // Helper to create IDs
 const id = () => Math.random().toString(36).substr(2, 9);
 
+// --- Data ---
 export const INITIAL_RECIPES: Recipe[] = [
   // --- APPETIZERS & DIPS ---
   {
