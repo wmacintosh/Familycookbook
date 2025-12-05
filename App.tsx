@@ -466,7 +466,7 @@ const getAvatarColor = (name: string, explicitColor?: string) => {
 const Toast: React.FC<{ message: string; type: 'success' | 'error'; onClose: () => void }> = ({ message, type, onClose }) => {
   useEffect(() => { const timer = setTimeout(onClose, 4000); return () => clearTimeout(timer); }, [onClose]);
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl animate-slide-up ${type === 'success' ? 'bg-stone-900 text-white' : 'bg-red-600 text-white'}`}>
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl animate-fade-in ${type === 'success' ? 'bg-stone-900 text-white' : 'bg-red-600 text-white'}`}>
        {type === 'success' ? <CheckCircle size={20} className="text-green-400" /> : <AlertCircle size={20} className="text-white" />}
        <span className="font-medium">{message}</span>
        <button onClick={onClose}><X size={16} className="opacity-50 hover:opacity-100" /></button>
