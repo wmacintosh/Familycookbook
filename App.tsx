@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee, Image as ImageIcon, AlertTriangle, ChevronDown, FileJson, Copy, Database } from 'lucide-react';
+import { BookOpen, Search, Plus, ChefHat, User, Home, UtensilsCrossed, X, Menu, Printer, Check, Heart, Trash2, PlusCircle, Palette, ChevronRight, Edit2, Share2, Clock, Thermometer, ArrowLeft, LayoutGrid, List, Soup, Croissant, Cake, Pizza, Leaf, Droplet, Coffee, Image as ImageIcon, AlertTriangle, ChevronDown, FileJson, Copy, Database, Download, Upload } from 'lucide-react';
 
 // --- Type Definitions ---
 export interface Recipe {
@@ -4040,8 +4040,9 @@ const DeleteConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void; 
   );
 };
 
-const DataExportModal: React.FC<{ isOpen: boolean; onClose: () => void; recipes: Recipe[] }> = ({ isOpen, onClose, recipes }) => {
+const DataExportModal: React.FC<{ isOpen: boolean; onClose: () => void; recipes: Recipe[]; onImport: (recipes: Recipe[]) => void }> = ({ isOpen, onClose, recipes, onImport }) => {
   const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!isOpen) return null;
 
@@ -4053,44 +4054,114 @@ const DataExportModal: React.FC<{ isOpen: boolean; onClose: () => void; recipes:
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadJson = () => {
+    const jsonStr = JSON.stringify(recipes, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `shirleys_kitchen_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          // Validate at least one item looks like a recipe
+          if (parsed.length > 0 && (!parsed[0].id || !parsed[0].title)) {
+             alert("Invalid file format: Data does not appear to be a list of recipes.");
+             return;
+          }
+          if (window.confirm(`Found ${parsed.length} recipes. Import and merge them into your cookbook?`)) {
+             onImport(parsed);
+             onClose();
+          }
+        } else {
+          alert("Invalid file format: Expected an array of recipes.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error parsing JSON file.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
   return (
     <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full h-[80vh] flex flex-col transform transition-all animate-scale-in border border-stone-200">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full h-[85vh] flex flex-col transform transition-all animate-scale-in border border-stone-200">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-             <div className="bg-sky-100 p-3 rounded-full text-sky-600"><FileJson size={24} /></div>
+             <div className="bg-sky-100 p-3 rounded-full text-sky-600"><Database size={24} /></div>
              <div>
-                <h3 className="font-serif text-2xl font-bold text-stone-900">Developer Data</h3>
-                <p className="text-xs text-stone-500 uppercase tracking-widest">Persist your changes</p>
+                <h3 className="font-serif text-2xl font-bold text-stone-900">Data Management</h3>
+                <p className="text-xs text-stone-500 uppercase tracking-widest">Backup, Restore & Export</p>
              </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full text-stone-500"><X size={24} /></button>
         </div>
         
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
-          <p className="font-bold mb-1 flex items-center gap-2"><Database size={14}/> How to save permanently:</p>
-          <p>Since this app uses local storage, changes are only saved on <strong>this device</strong>. To make your edits permanent for everyone on Vercel:</p>
-          <ol className="list-decimal list-inside mt-2 space-y-1 ml-2">
-            <li>Click <strong>Copy Code</strong> below.</li>
-            <li>Open your <code>App.tsx</code> file in your code editor.</li>
-            <li>Replace the entire <code>INITIAL_RECIPES</code> constant with this code.</li>
-            <li>Commit and push to GitHub.</li>
-          </ol>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-sky-50 border border-sky-100 rounded-xl p-5 flex flex-col items-center text-center gap-3 hover:shadow-md transition-shadow">
+               <div className="bg-white p-2 rounded-full shadow-sm text-sky-600"><Download size={24}/></div>
+               <div>
+                 <h4 className="font-bold text-stone-800">Backup Recipes</h4>
+                 <p className="text-xs text-stone-500 mt-1">Download your cookbook as a JSON file.</p>
+               </div>
+               <button onClick={handleDownloadJson} className="mt-auto w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-bold transition-colors">Download JSON</button>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-5 flex flex-col items-center text-center gap-3 hover:shadow-md transition-shadow">
+               <div className="bg-white p-2 rounded-full shadow-sm text-amber-600"><Upload size={24}/></div>
+               <div>
+                 <h4 className="font-bold text-stone-800">Restore Recipes</h4>
+                 <p className="text-xs text-stone-500 mt-1">Import recipes from a JSON file.</p>
+               </div>
+               <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  accept=".json" 
+                  className="hidden" 
+               />
+               <button onClick={() => fileInputRef.current?.click()} className="mt-auto w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold transition-colors">Import JSON</button>
+            </div>
         </div>
 
-        <div className="flex-1 bg-stone-900 rounded-xl p-4 overflow-hidden flex flex-col relative group">
-           <textarea 
-             readOnly
-             className="w-full h-full bg-transparent text-stone-300 font-mono text-xs resize-none outline-none custom-scrollbar"
-             value={dataStr}
-           />
-           <button 
-             onClick={handleCopy}
-             className="absolute top-4 right-4 bg-white/10 hover:bg-white text-white hover:text-stone-900 backdrop-blur-md px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border border-white/20"
-           >
-             {copied ? <Check size={14} /> : <Copy size={14} />}
-             {copied ? 'Copied!' : 'Copy Code'}
-           </button>
+        <div className="border-t border-stone-200 pt-6 flex-1 flex flex-col min-h-0">
+          <div className="flex items-center gap-2 mb-3">
+             <FileJson size={16} className="text-stone-400"/>
+             <h4 className="font-bold text-stone-700 text-sm uppercase tracking-wide">Developer Code Export</h4>
+          </div>
+          <div className="bg-stone-100 border border-stone-200 rounded-xl p-4 mb-4 text-xs text-stone-600">
+            <p>To permanently save changes to the source code (for Vercel deployment), copy the code below and replace <code>INITIAL_RECIPES</code> in <code>App.tsx</code>.</p>
+          </div>
+
+          <div className="flex-1 bg-stone-900 rounded-xl p-4 overflow-hidden flex flex-col relative group">
+             <textarea 
+               readOnly
+               className="w-full h-full bg-transparent text-stone-300 font-mono text-xs resize-none outline-none custom-scrollbar"
+               value={dataStr}
+             />
+             <button 
+               onClick={handleCopy}
+               className="absolute top-4 right-4 bg-white/10 hover:bg-white text-white hover:text-stone-900 backdrop-blur-md px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border border-white/20"
+             >
+               {copied ? <Check size={14} /> : <Copy size={14} />}
+               {copied ? 'Copied!' : 'Copy Code'}
+             </button>
+          </div>
         </div>
       </div>
     </div>
@@ -4742,6 +4813,7 @@ const App: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [showDataExport, setShowDataExport] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Action completed successfully");
   
   const [mobileView, setMobileView] = useState<'categories' | 'recipes'>('categories');
 
@@ -4824,6 +4896,12 @@ const App: React.FC = () => {
       setView('list'); // Ensure we switch to list view
   }
 
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+  };
+
   const handleAddRecipe = (newRecipe: Recipe) => {
     const updatedRecipes = [...recipes, newRecipe];
     setRecipes(updatedRecipes);
@@ -4831,8 +4909,7 @@ const App: React.FC = () => {
     setSelectedCategory(newRecipe.category);
     setView('list');
     setSearchTerm('');
-    setShowSuccessToast(true);
-    setTimeout(() => setShowSuccessToast(false), 3000);
+    showToast("Recipe added successfully");
   };
 
   const handleUpdateRecipe = (updatedRecipe: Recipe) => {
@@ -4841,8 +4918,7 @@ const App: React.FC = () => {
     setSelectedRecipe(updatedRecipe);
     setEditingRecipe(null);
     setShowAddModal(false);
-    setShowSuccessToast(true);
-    setTimeout(() => setShowSuccessToast(false), 3000);
+    showToast("Recipe updated");
   }
   
   const handleDeleteRecipe = () => {
@@ -4851,10 +4927,19 @@ const App: React.FC = () => {
       setRecipes(updatedList);
       setSelectedRecipe(null);
       setView('list');
-      setShowSuccessToast(true); // Reusing success toast for deletion confirmation visually
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      showToast("Recipe deleted");
     }
   }
+
+  const handleImportRecipes = (importedRecipes: Recipe[]) => {
+    // Merge logic: Update existing IDs, Add new ones.
+    const recipeMap = new Map(recipes.map(r => [r.id, r]));
+    importedRecipes.forEach(r => recipeMap.set(r.id, r));
+    const mergedList = Array.from(recipeMap.values());
+    
+    setRecipes(mergedList);
+    showToast(`${importedRecipes.length} recipes imported successfully`);
+  };
 
   const handleSearchChange = (value: string) => {
       setSearchTerm(value);
@@ -4978,7 +5063,7 @@ const App: React.FC = () => {
                   onClick={() => setShowDataExport(true)}
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-stone-800 hover:text-stone-400 transition-colors"
                 >
-                  <FileJson size={14} /> Developer Data
+                  <Database size={14} /> Data Management
                 </button>
                 <p>&copy; 2024 MacIntosh Family</p>
              </div>
@@ -5182,7 +5267,7 @@ const App: React.FC = () => {
              {showSuccessToast && (
                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-stone-900/90 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-slide-up backdrop-blur-md z-50">
                  <div className="bg-green-500 rounded-full p-1"><Check size={12} strokeWidth={4} /></div>
-                 <span className="font-medium">Action completed successfully</span>
+                 <span className="font-medium">{toastMessage}</span>
                </div>
              )}
           </main>
@@ -5241,6 +5326,7 @@ const App: React.FC = () => {
         isOpen={showDataExport}
         onClose={() => setShowDataExport(false)}
         recipes={recipes}
+        onImport={handleImportRecipes}
       />
     </div>
   );
