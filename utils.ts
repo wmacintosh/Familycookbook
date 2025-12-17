@@ -1,26 +1,33 @@
-
-// Helper to safely get API Key without crashing if process is undefined (Vercel/Vite issue)
-export const getApiKey = () => {
-  // Try retrieving from Vite's import.meta.env (standard for Vercel+Vite)
-  try {
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-ignore
-      const key = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY;
-      if (key) return key;
-    }
-  } catch (e) {
-    // ignore
+// Custom Error Class for Application-level errors
+export class AppError extends Error {
+  constructor(message: string, public code: string = 'UNKNOWN_ERROR') {
+    super(message);
+    this.name = 'AppError';
   }
+}
 
-  // Fallback to process.env (standard Node/Webpack)
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-       const key = process.env.API_KEY || process.env.VITE_API_KEY;
-       if (key) return key;
-    }
-  } catch (e) {
-    // process is not defined
+// Robust ID Generation using Crypto API
+export const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
-  return "";
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Simulated Fetch wrapper to handle mocked CORS/Server policies
+export const fetchWithCORS = async (url: string, options: RequestInit = {}) => {
+  const headers = {
+    ...options.headers,
+    'Content-Type': 'application/json',
+    // Simulate strict CORS headers (would be enforced by backend)
+    'X-Requested-With': 'XMLHttpRequest', 
+  };
+  
+  // In a real app, this would fetch from a backend. 
+  // Here we just return the config for demonstration.
+  return { url, headers };
 };

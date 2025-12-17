@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Key, Info } from 'lucide-react';
 
 const tartanStyles = {
   backgroundColor: '#cc0000', // MacIntosh Red Base
@@ -18,6 +18,31 @@ const tartanStyles = {
 
 const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const [imgError, setImgError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleEnter = async () => {
+    setIsLoading(true);
+    const aistudio = (window as any).aistudio;
+    
+    try {
+      if (aistudio) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+          // Mandatory: open selection and assume success to avoid race condition
+          await aistudio.openSelectKey();
+          onStart();
+          return;
+        }
+      }
+      onStart();
+    } catch (e) {
+      console.error("API Key error:", e);
+      // Proceed to allow manual retry or handle failure gracefully in components
+      onStart();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div style={tartanStyles} className="flex flex-col items-center justify-start min-h-screen w-full relative overflow-y-auto pb-20">
@@ -42,9 +67,9 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           </div>
         </div>
 
-        <h1 className="font-serif text-5xl md:text-7xl text-stone-900 mb-2 tracking-tight drop-shadow-sm">Shirley’s Kitchen</h1>
+        <h1 className="font-serif text-5xl md:text-7xl text-stone-900 mb-2 tracking-tight drop-shadow-sm">Shirley's Kitchen</h1>
         <h2 className="font-serif text-3xl md:text-4xl text-red-900 italic mb-6">Cooking with Nan</h2>
-        <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-t-b border-stone-300 py-2 inline-block border-t border-b">
+        <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-t border-b border-stone-300 py-2 inline-block">
           A Cherished Collection of Recipes Passed Down Through Generations
         </p>
         
@@ -53,30 +78,40 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             My earliest memories of the kitchen are forged links to my Nan, Shirley MacIntosh. It was her domain, a
             sanctuary where she moved with quiet, purposeful grace, her hands perpetually busy, creating magic from
             simple ingredients. This book is a labor of love, a deeply personal compilation of her cherished recipes,
-            each one carrying a piece of her spirit, a story waiting to be retold. It’s dedicated with particular affection
-            to her daughters, who, like myself, were privileged to learn the art of cooking beside her, absorbing not just
-            her techniques but also her quiet wisdom.
+            each one carrying a piece of her spirit, a story waiting to be retold.
           </p>
           <p className="indent-8">
             These recipes are more than mere instructions; they are a tangible connection to her, a way to recreate
-            the flavors and the moments that defined our family gatherings, moments that now feel precious and fleeting
-            in the passage of time. May each dish you prepare from these pages bring back the warmth of her presence,
-            the comfort of her touch, and the joy of the memories we shared, preserving her legacy for generations to
-            come. This book is a way to hold on to her, to keep her alive in our kitchens and in our hearts.
+            the flavors and the moments that defined our family gatherings. May each dish you prepare from these pages bring back the warmth of her presence.
           </p>
         </div>
 
         <div className="mb-8">
           <button
-            onClick={onStart}
-            className="group relative px-12 py-4 bg-teal-800 text-white font-serif text-xl rounded-sm shadow-xl hover:bg-teal-900 hover:-translate-y-1 transition-all duration-300 overflow-hidden ring-1 ring-teal-700/50"
+            onClick={handleEnter}
+            disabled={isLoading}
+            className="group relative px-12 py-4 bg-teal-800 text-white font-serif text-xl rounded-sm shadow-xl hover:bg-teal-900 hover:-translate-y-1 transition-all duration-300 overflow-hidden ring-1 ring-teal-700/50 disabled:opacity-70 disabled:cursor-wait"
           >
             <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <span className="relative z-10 flex items-center gap-3">
-              <BookOpen size={24} />
-              Enter Kitchen
+              {isLoading ? <span className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></span> : <BookOpen size={24} />}
+              {isLoading ? 'Preparing...' : 'Enter Kitchen'}
             </span>
           </button>
+          
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <p className="text-xs text-stone-500 max-w-xs mx-auto flex items-center gap-1">
+              <Key size={12}/> Advanced AI features require an API key from a paid project.
+            </p>
+            <a 
+              href="https://ai.google.dev/gemini-api/docs/billing" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[10px] text-teal-700 hover:underline flex items-center gap-1 font-bold"
+            >
+              <Info size={10}/> Gemini API Billing Documentation
+            </a>
+          </div>
         </div>
 
         <p className="italic text-stone-900 font-bold font-serif text-xl mt-16">

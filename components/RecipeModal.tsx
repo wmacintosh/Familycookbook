@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, ChevronRight, ChevronDown, Palette, Check } from 'lucide-react';
+import { X, ChevronRight, ChevronDown, Palette, Check, Link } from 'lucide-react';
 import { Recipe, Category } from '../types';
 import { FAMILY_MEMBERS, OWNER_COLORS, AVATAR_COLORS, getAvatarColor, generateId } from '../data';
 import DynamicListInput from './DynamicListInput';
@@ -126,6 +126,17 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ onClose, onSave, initialData 
               <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider">Yields</label>
               <input value={yields} onChange={e => setYields(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm" placeholder="e.g. 12 servings" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-stone-500 mb-2 tracking-wider flex items-center gap-2"><Link size={14}/> Image URL (Optional)</label>
+            <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} className="w-full border border-stone-200 rounded-xl p-3.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none shadow-sm text-stone-600 font-mono text-xs" placeholder="https://..." />
+            {imageUrl && (
+              <div className="mt-2 h-32 w-full rounded-lg overflow-hidden border border-stone-100 bg-stone-100 relative">
+                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <div className="absolute top-2 right-2 bg-white/80 p-1 rounded-full cursor-pointer hover:bg-white" onClick={() => setImageUrl('')}><X size={12}/></div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

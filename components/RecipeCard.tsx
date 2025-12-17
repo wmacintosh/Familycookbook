@@ -3,6 +3,7 @@ import React from 'react';
 import { Heart, UtensilsCrossed, Clock } from 'lucide-react';
 import { Recipe } from '../types';
 import { getAvatarColor } from '../data';
+import StarRating from './StarRating';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -31,7 +32,10 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, isFavorite, on
 
       <div className="p-7 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-4">
-          <span className="text-[10px] font-bold tracking-widest text-sky-700 uppercase bg-sky-50/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-sky-100/50">{recipe.category}</span>
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-bold tracking-widest text-sky-700 uppercase bg-sky-50/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-sky-100/50 w-fit">{recipe.category}</span>
+            {recipe.rating ? <StarRating rating={recipe.rating} readonly size={12} /> : null}
+          </div>
           <button 
             onClick={onToggleFavorite}
             className={`p-2 rounded-full transition-all duration-300 z-10 ${isFavorite ? 'text-rose-600 bg-rose-50 shadow-inner scale-110' : 'text-stone-300 hover:text-rose-500 hover:bg-rose-50 hover:scale-110'}`}
@@ -51,15 +55,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, isFavorite, on
              {recipe.cookTime && <span className="bg-stone-50 px-2 py-1 rounded text-stone-500 flex items-center gap-1"><Clock size={12}/> {recipe.cookTime}</span>}
           </div>
           
-          <div className="flex items-center gap-2.5 mt-1">
+          <div className="flex items-center gap-3 mt-1">
              <div 
-               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm ring-2 ring-offset-2 ring-stone-50 transition-transform group-hover:scale-105"
+               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md ring-2 ring-white transition-transform group-hover:scale-110"
                style={{ backgroundColor: badgeColor }}
              >
                {recipe.addedBy.charAt(0).toUpperCase()}
              </div>
-             <span className="text-xs text-stone-500 font-medium">
-               {recipe.addedBy === 'Nan' ? 'Original Recipe' : `Added by ${recipe.addedBy}`}
+             <span className="text-xs text-stone-500 font-medium tracking-wide">
+               {recipe.addedBy === 'Nan' ? 'Original Recipe' : `By ${recipe.addedBy}`}
              </span>
           </div>
         </div>

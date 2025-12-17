@@ -9,11 +9,12 @@ export interface Recipe {
   prepTime?: string;
   cookTime?: string;
   temp?: string;
-  description?: string; // Subtitle or extra notes
-  addedBy: string; // "Nan" for original, or user name
-  userColor?: string; // Hex code for user avatar/badge
+  description?: string;
+  addedBy: string;
+  userColor?: string;
   timestamp: number;
   imageUrl?: string;
+  rating?: number; // Added rating property (0-5)
 }
 
 export enum Category {
@@ -28,4 +29,16 @@ export enum Category {
 
 export interface UserColorMap {
   [username: string]: string;
+}
+
+export interface RecipeContextType {
+  recipes: Recipe[];
+  favorites: string[];
+  addRecipe: (recipe: Recipe) => void;
+  updateRecipe: (recipe: Recipe) => void;
+  deleteRecipe: (id: string) => void;
+  toggleFavorite: (id: string) => void;
+  importRecipes: (recipes: Recipe[]) => void;
+  loading: boolean;
+  error: string | null;
 }
