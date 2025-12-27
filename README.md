@@ -27,17 +27,34 @@ View your app in AI Studio: https://ai.studio/apps/drive/1Rk-NLmQ5e6rr8P0NwavHeS
 ### Installation
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Run development server
-npm run dev
+# 2. Install backend server dependencies
+cd server && npm install && cd ..
 
-# Build for production
-npm run build
+# 3. Create .env file with your Gemini API key
+cp .env.example .env
+# Edit .env and add: GEMINI_API_KEY=your_key_here
+```
+
+### Running the App
+
+**You need 2 terminal windows:**
+
+**Terminal 1 - Backend Server:**
+```bash
+npm run dev:server
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
 ```
 
 The app will be available at `http://localhost:5173`
+
+See [BACKEND_SETUP.md](./BACKEND_SETUP.md) for detailed instructions.
 
 ## 📝 Development
 

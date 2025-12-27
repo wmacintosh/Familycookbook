@@ -1,96 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://esm.sh; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:;">
-    <title>Shirley's Kitchen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              serif: ['"Playfair Display"', 'serif'],
-              sans: ['"Lato"', 'sans-serif'],
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://esm.sh; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:;">
+  <title>Shirley's Kitchen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap"
+    rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['"Lato"', 'sans-serif'],
+          },
+          colors: {
+            stone: {
+              50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
+              400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
+              800: '#292524', 900: '#1c1917'
             },
-            colors: {
-              stone: {
-                50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
-                400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
-                800: '#292524', 900: '#1c1917'
-              },
-              amber: {
-                50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 500: '#f59e0b',
-                600: '#d97706', 700: '#b45309', 900: '#78350f'
-              },
-              sky: {
-                50: '#EDF4F8', 100: '#DBE9F0', 200: '#B6D3E2', 300: '#92BCD3',
-                400: '#6DA6C5', 500: '#4990B6', 600: '#3A7392', 700: '#2C566D',
-                800: '#1D3A49', 900: '#0F1D24', 950: '#0A141A'
-              }
+            amber: {
+              50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 500: '#f59e0b',
+              600: '#d97706', 700: '#b45309', 900: '#78350f'
             },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'scale-in': 'scaleIn 0.3s ease-out',
-            },
-            keyframes: {
-              fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-              scaleIn: { 
-                '0%': { opacity: '0', transform: 'scale(0.95)' }, 
-                '100%': { opacity: '1', transform: 'scale(1)' } 
-              }
+            sky: {
+              50: '#EDF4F8', 100: '#DBE9F0', 200: '#B6D3E2', 300: '#92BCD3',
+              400: '#6DA6C5', 500: '#4990B6', 600: '#3A7392', 700: '#2C566D',
+              800: '#1D3A49', 900: '#0F1D24', 950: '#0A141A'
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            scaleIn: {
+              '0%': { opacity: '0', transform: 'scale(0.95)' },
+              '100%': { opacity: '1', transform: 'scale(1)' }
             }
           }
         }
       }
-    </script>
-    
-    <style>
-      body { background-color: #f5f5f4; }
-      .recipe-card-shadow {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      }
-      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
-      .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background: rgba(0, 0, 0, 0.2); border-radius: 10px; 
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
-    </style>
+    }
+  </script>
 
-    <script>
-      // Browser Shim for process.env
-      if (typeof window !== 'undefined') {
-        window.process = window.process || { env: {} };
-      }
-    </script>
-    <script type="module">
-      try {
-        // Map Vite env variables to process.env if available
-        if (typeof import.meta !== 'undefined' && import.meta.env) {
-          if (!window.process) window.process = { env: {} };
-          
-          Object.assign(window.process.env, import.meta.env);
-          
-          // Explicitly set API_KEY if VITE_API_KEY is present
-          if (import.meta.env.VITE_API_KEY) {
-            window.process.env.API_KEY = import.meta.env.VITE_API_KEY;
-          }
-        }
-      } catch (e) {
-        console.warn("Env setup warning:", e);
-      }
-    </script>
-  </head>
-  
-  <body>
-    <div id="root"></div>
+  <style>
+    body {
+      background-color: #f5f5f4;
+    }
 
-    <script type="importmap">
+    .recipe-card-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  </style>
+
+
+
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="importmap">
       {
         "imports": {
           "react": "https://esm.sh/react@18.2.0",
@@ -101,11 +97,12 @@
           "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
           "@remix-run/router": "https://esm.sh/@remix-run/router@1.15.3",
           "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
-          "@google/genai": "https://esm.sh/@google/genai@0.1.0"
+
         }
       }
     </script>
-    
-    <script type="module" src="./index.tsx"></script>
-  </body>
+
+  <script type="module" src="./index.tsx"></script>
+</body>
+
 </html>

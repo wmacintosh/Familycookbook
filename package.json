@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "cd server && npm run dev",
+    "dev:full": "echo 'Run in 2 terminals: npm run dev:server (in one) and npm run dev (in another)'",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
