@@ -1,11 +1,3 @@
-// Additional recipe data - import this in data.ts
-// Generated from Nan's recipe collection
-
-export const additionalRecipes = [
-    // Due to size constraints, recipes should be added via the import script
-    // or by directly editing this file
-    // Format: Standard Recipe objects matching the Recipe type
-];
 import { Recipe, Category } from "./types";
 
 // Helper to create IDs
