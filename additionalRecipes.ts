@@ -264,6 +264,27 @@ export const INITIAL_RECIPES: Recipe[] = [
     },
     {
         id: id(),
+        title: "Cucumber Salad (Sweet & Sour)",
+        category: Category.SOUPS_SALADS,
+        ingredients: [
+            "1/2 cup vinegar",
+            "1/4 cup water",
+            "1/4 cup sugar",
+            "1 tsp salt",
+            "1/8 tsp pepper",
+            "2-3 cucumbers, peeled and sliced thin",
+            "1 small onion, sliced thin"
+        ],
+        instructions: [
+            "Combine vinegar, water, sugar, salt, and pepper. Stir until sugar is dissolved.",
+            "Pour over sliced cucumbers and onions.",
+            "Cover and refrigerate for at least 2-3 hours before serving."
+        ],
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
         title: "Three Bean Salad",
         category: Category.SOUPS_SALADS,
         ingredients: [
