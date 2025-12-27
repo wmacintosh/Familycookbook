@@ -23,7 +23,7 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const handleEnter = async () => {
     setIsLoading(true);
     const aistudio = (window as any).aistudio;
-    
+
     try {
       if (aistudio) {
         const hasKey = await aistudio.hasSelectedApiKey();
@@ -47,15 +47,15 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   return (
     <div style={tartanStyles} className="flex flex-col items-center justify-start min-h-screen w-full relative overflow-y-auto pb-20">
       <div className="absolute inset-0 bg-black/30 fixed"></div>
-      
+
       <div className="relative z-10 bg-stone-50/95 p-8 md:p-16 rounded-sm shadow-2xl max-w-4xl mx-4 text-center border-double border-8 border-stone-800 mt-10 md:mt-20 animate-fade-in">
         {/* Family Crest */}
         <div className="mb-8 flex justify-center">
           <div className="w-40 h-40 md:w-48 md:h-48 relative group perspective-1000">
             {!imgError ? (
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png" 
-                alt="MacIntosh Family Crest" 
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Macintosh_Crest.svg/1200px-Macintosh_Crest.svg.png"
+                alt="MacIntosh Family Crest"
                 className="w-full h-full object-contain drop-shadow-2xl transform transition-transform duration-700 group-hover:rotate-y-12"
                 onError={() => setImgError(true)}
               />
@@ -72,7 +72,7 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
         <p className="font-serif text-lg md:text-xl text-stone-600 mb-10 uppercase tracking-widest border-t border-b border-stone-300 py-2 inline-block">
           A Cherished Collection of Recipes Passed Down Through Generations
         </p>
-        
+
         <div className="prose prose-stone prose-lg text-stone-700 leading-relaxed text-justify mb-12 mx-auto max-w-2xl bg-stone-100/50 p-6 rounded-lg border border-stone-200 shadow-inner">
           <p className="mb-4 indent-8">
             My earliest memories of the kitchen are forged links to my Nan, Shirley MacIntosh. It was her domain, a
@@ -98,20 +98,7 @@ const Intro: React.FC<{ onStart: () => void }> = ({ onStart }) => {
               {isLoading ? 'Preparing...' : 'Enter Kitchen'}
             </span>
           </button>
-          
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <p className="text-xs text-stone-500 max-w-xs mx-auto flex items-center gap-1">
-              <Key size={12}/> Advanced AI features require an API key from a paid project.
-            </p>
-            <a 
-              href="https://ai.google.dev/gemini-api/docs/billing" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-[10px] text-teal-700 hover:underline flex items-center gap-1 font-bold"
-            >
-              <Info size={10}/> Gemini API Billing Documentation
-            </a>
-          </div>
+
         </div>
 
         <p className="italic text-stone-900 font-bold font-serif text-xl mt-16">
