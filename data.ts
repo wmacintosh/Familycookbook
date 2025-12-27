@@ -1,5 +1,6 @@
 
 import { Recipe, Category } from './types';
+import { INITIAL_RECIPES as ADDITIONAL_RECIPES } from './additionalRecipes';
 
 // Robust ID generation using crypto.randomUUID if available
 export const generateId = (): string => {
@@ -31,7 +32,7 @@ export const OWNER_COLORS: Record<string, string> = {
 };
 
 export const AVATAR_COLORS = [
-  '#b91c1c', '#15803d', '#b45309', '#0369a1', '#334155', 
+  '#b91c1c', '#15803d', '#b45309', '#0369a1', '#334155',
   '#4338ca', '#be185d', '#854d0e', '#0f766e', '#7e22ce',
 ];
 
@@ -638,5 +639,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     cookTime: "1 hour",
     addedBy: "Nan",
     timestamp: Date.now()
-  }
+  },
+  // All additional recipes from Nan's collection imported below
+  ...ADDITIONAL_RECIPES
 ];
