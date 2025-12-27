@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { Recipe, RecipeContextType } from '../types';
 import { INITIAL_RECIPES } from '../data';
 import { searchService } from '../services/searchService';
@@ -29,17 +29,17 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         // Merge logic to keep new initial recipes while preserving user edits
         const parsedStored: Recipe[] = JSON.parse(storedRecipes);
         const storedMap = new Map(parsedStored.map(r => [r.id, r]));
-        
+
         // Ensure new static recipes are added if not deleted by user
         const mergedRecipes = INITIAL_RECIPES.map(r => {
-            if (storedMap.has(r.id)) {
-                const stored = storedMap.get(r.id);
-                storedMap.delete(r.id); 
-                return stored!;
-            }
-            return r;
+          if (storedMap.has(r.id)) {
+            const stored = storedMap.get(r.id);
+            storedMap.delete(r.id);
+            return stored!;
+          }
+          return r;
         });
-        
+
         // Combine merged + user created
         const finalRecipes = [...mergedRecipes, ...Array.from(storedMap.values())];
         setRecipes(finalRecipes);
@@ -70,47 +70,49 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [recipes, loading]);
 
-  const addRecipe = (newRecipe: Recipe) => {
+  const addRecipe = useCallback((newRecipe: Recipe) => {
     setRecipes(prev => [...prev, newRecipe]);
-  };
+  }, []);
 
-  const updateRecipe = (updatedRecipe: Recipe) => {
+  const updateRecipe = useCallback((updatedRecipe: Recipe) => {
     setRecipes(prev => prev.map(r => r.id === updatedRecipe.id ? updatedRecipe : r));
-  };
+  }, []);
 
-  const deleteRecipe = (id: string) => {
+  const deleteRecipe = useCallback((id: string) => {
     setRecipes(prev => prev.filter(r => r.id !== id));
-  };
+  }, []);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => {
-      const newFavs = prev.includes(id) 
-        ? prev.filter(f => f !== id) 
+      const newFavs = prev.includes(id)
+        ? prev.filter(f => f !== id)
         : [...prev, id];
       localStorage.setItem('shirleys_kitchen_favorites', JSON.stringify(newFavs));
       return newFavs;
     });
-  };
+  }, []);
 
-  const importRecipes = (importedRecipes: Recipe[]) => {
+  const importRecipes = useCallback((importedRecipes: Recipe[]) => {
     const recipeMap = new Map(recipes.map(r => [r.id, r]));
     importedRecipes.forEach(r => recipeMap.set(r.id, r));
     const mergedList = Array.from(recipeMap.values());
     setRecipes(mergedList);
-  };
+  }, [recipes]);
+
+  const contextValue = useMemo(() => ({
+    recipes,
+    favorites,
+    addRecipe,
+    updateRecipe,
+    deleteRecipe,
+    toggleFavorite,
+    importRecipes,
+    loading,
+    error
+  }), [recipes, favorites, addRecipe, updateRecipe, deleteRecipe, toggleFavorite, importRecipes, loading, error]);
 
   return (
-    <RecipeContext.Provider value={{
-      recipes,
-      favorites,
-      addRecipe,
-      updateRecipe,
-      deleteRecipe,
-      toggleFavorite,
-      importRecipes,
-      loading,
-      error
-    }}>
+    <RecipeContext.Provider value={contextValue}>
       {children}
     </RecipeContext.Provider>
   );
