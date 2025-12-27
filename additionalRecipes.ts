@@ -4181,7 +4181,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     {
         id: id(),
         title: "Eggnog/Flip",
-        category: Category.MISCELLANEOUS,
+        category: Category.DESSERTS,
         ingredients: [
             "1 egg",
             "1 cup warm milk",
@@ -4199,7 +4199,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     {
         id: id(),
         title: "Blini / Pancakes",
-        category: Category.BREAKFAST,
+        category: Category.DESSERTS,
         ingredients: [
             "2 qt cottage cheese",
             "6 egg yolks",
@@ -4988,7 +4988,7 @@ export const INITIAL_RECIPES: Recipe[] = [
     {
         id: id(),
         title: "Christmas Morning Wife Saver (Transcribed)",
-        category: Category.BREAKFAST,
+        category: Category.MAIN_DISHES,
         ingredients: [
             "16 slices bread (crusts removed)",
             "16 slices Canadian back bacon (or ham)",
@@ -5515,6 +5515,286 @@ export const INITIAL_RECIPES: Recipe[] = [
         temp: "375°F",
         cookTime: "55 mins",
         addedBy: "Nan (Transcribed)",
+        timestamp: Date.now()
+    },
+
+    // --- ADDITIONAL MISSING RECIPES FROM MASTER COLLECTION ---
+
+    // Main Dishes
+    {
+        id: id(),
+        title: "Oven Rice",
+        category: Category.SIDE_DISHES,
+        ingredients: [
+            "1 1/2 cups Uncle Ben's Rice",
+            "1/3 cup butter",
+            "1 can mushroom pieces",
+            "1/3 cup oil",
+            "1 envelope onion soup mix",
+            "3 cups water"
+        ],
+        instructions: [
+            "Mix all ingredients in a casserole dish.",
+            "Cover and bake at 350°F for 30-45 minutes."
+        ],
+        temp: "350°F",
+        cookTime: "30-45 mins",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
+        title: "Meat Pie Method (Stewed Meat)",
+        category: Category.MAIN_DISHES,
+        ingredients: [
+            "Meat pieces (with bones)",
+            "1 medium onion, grated",
+            "Pastry for pie crust",
+            "Water for stewing",
+            "Salt and pepper to taste"
+        ],
+        instructions: [
+            "Stew meat together until well cooked (meat removed easily from bone).",
+            "Remove from heat and cool. Remove all bones and gristle.",
+            "Grate 1 medium onion into the meat mixture and mix.",
+            "Line a pie plate with pastry. Fill shell with meat mixture.",
+            "Cover with pastry and bake at 350°F until done."
+        ],
+        temp: "350°F",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
+        title: "Holico Beans",
+        category: Category.SIDE_DISHES,
+        ingredients: [
+            "1 lb bacon, cooked and crumbled",
+            "1 onion, diced",
+            "3/4 cup brown sugar",
+            "1/3 cup vinegar",
+            "1/2 tsp dry mustard",
+            "1 can kidney beans",
+            "1 can lima beans",
+            "1 can chickpea beans",
+            "1 can brown beans (pork & beans)"
+        ],
+        instructions: [
+            "Cook bacon and crumble. Sauté onion.",
+            "Mix all ingredients together.",
+            "Cover and bake at 350°F for 1 hour."
+        ],
+        temp: "350°F",
+        cookTime: "1 hour",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+
+    // Breads & Muffins
+    {
+        id: id(),
+        title: "Bran Muffins (Carolyn Ross)",
+        category: Category.BREADS_MUFFINS,
+        ingredients: [
+            "2 cups Bran Buds",
+            "2 cups boiling water",
+            "1 cup Crisco",
+            "3 cups sugar",
+            "4 eggs",
+            "1 qt buttermilk",
+            "5 cups flour",
+            "5 tsp baking soda (heaping)",
+            "1 tsp salt",
+            "4 cups regular Bran",
+            "2 cups raisins (or dates)"
+        ],
+        instructions: [
+            "Pour boiling water over Bran Buds; set aside to cool.",
+            "Cream Crisco, sugar, and eggs together.",
+            "Add buttermilk, flour, soda, and salt. Mix well.",
+            "Add regular Bran, raisins, and the cooled Bran Buds.",
+            "Mix well and refrigerate overnight.",
+            "Bake at 350°F. (Batter keeps in the fridge for a few weeks)."
+        ],
+        temp: "350°F",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
+        title: "Fermipon Yeast Bread",
+        category: Category.BREADS_MUFFINS,
+        ingredients: [
+            "4 cups flour (plus extra as needed)",
+            "2 tbsp Fermipon yeast",
+            "2 eggs",
+            "1/2 cup oil",
+            "1/2 cup sugar",
+            "1 tsp salt",
+            "3 cups lukewarm water"
+        ],
+        instructions: [
+            "Mix 4 cups flour and yeast.",
+            "Beat eggs, add sugar, oil, salt, and water.",
+            "Mix with flour to make a soft dough; add more flour if necessary.",
+            "Let rise for 15 minutes, then punch down.",
+            "Let rise another 15 minutes, punch down, and put in muffin pans.",
+            "Let rise for 1 hour.",
+            "Bake at 325°F for 10–15 minutes."
+        ],
+        temp: "325°F",
+        cookTime: "10-15 mins",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+
+    // Cookies & Squares
+    {
+        id: id(),
+        title: "Healthy Cookies (Hood)",
+        category: Category.DESSERTS,
+        ingredients: [
+            "1/2 cup margarine",
+            "1/2 cup white sugar",
+            "1/2 cup brown sugar",
+            "1 egg",
+            "1 tsp baking soda",
+            "1 tsp baking powder",
+            "1 tsp vanilla",
+            "1 cup oatmeal",
+            "1/2 cup chocolate chips (or raisins)",
+            "1/2 cup coconut",
+            "1 cup whole wheat flour",
+            "Milk if needed"
+        ],
+        instructions: [
+            "Cream margarine and sugars. Add egg, milk (if needed), and vanilla.",
+            "Gradually add dry ingredients.",
+            "Drop by spoonfuls on a greased cookie sheet.",
+            "Bake at 325°F."
+        ],
+        temp: "325°F",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
+        title: "Dorothy's Molasses Cookies",
+        category: Category.DESSERTS,
+        ingredients: [
+            "1 cup oil",
+            "1 cup molasses",
+            "1 cup brown sugar",
+            "2 tsp soda",
+            "2 tsp cinnamon",
+            "1 tsp ginger",
+            "1 egg (beaten)",
+            "1/2 cup milk",
+            "4 cups flour"
+        ],
+        instructions: [
+            "Mix ingredients (add enough flour for stiff dough).",
+            "Bake at 350°F. Makes ~3 dozen."
+        ],
+        temp: "350°F",
+        yields: "3 dozen",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+
+    // Cakes & Desserts
+    {
+        id: id(),
+        title: "Dark Boiled Fruit Cake",
+        category: Category.DESSERTS,
+        ingredients: [
+            "1 lb raisins",
+            "1 lb currants",
+            "1/2 lb mixed peel",
+            "1/4 lb cherries",
+            "2 cups white sugar",
+            "2 cups water",
+            "3/4 cup shortening",
+            "1 tsp salt",
+            "1/2 tsp cloves",
+            "1 tsp cinnamon",
+            "1 tsp nutmeg",
+            "1 tsp mixed spice",
+            "2 1/2 – 3 cups flour",
+            "1 tsp baking soda"
+        ],
+        instructions: [
+            "Combine fruits, sugar, water, shortening, and spices. Boil for 8 minutes and let cool.",
+            "Add flour and soda.",
+            "Bake for 2 hours in a 300°F oven."
+        ],
+        temp: "300°F",
+        cookTime: "2 hours",
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+    {
+        id: id(),
+        title: "Old-Fashioned Vanilla Ice Cream",
+        category: Category.DESSERTS,
+        ingredients: [
+            "6 egg yolks",
+            "2 cups sugar",
+            "1/2 tsp salt",
+            "4 cups milk, scalded",
+            "2 cups whipping cream",
+            "2 tbsp vanilla"
+        ],
+        instructions: [
+            "Beat egg yolks with sugar and salt. Stir in 2 cups of milk.",
+            "Heat slowly, stirring constantly until sugar is dissolved.",
+            "Chill mixture until cold.",
+            "Stir in remaining milk, cream, and vanilla.",
+            "Freeze in an ice cream freezer."
+        ],
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+
+    // Sweets & Candies
+    {
+        id: id(),
+        title: "Easy Chocolates",
+        category: Category.DESSERTS,
+        ingredients: [
+            "1 bag chocolate chips",
+            "1 bag peanut butter chips",
+            "2 small bags ruffled plain chips, crushed",
+            "2 Crispy Crunch bars, crushed"
+        ],
+        instructions: [
+            "Melt chocolate and peanut butter chips in the microwave.",
+            "Stir in crushed chips and chocolate bars.",
+            "Fill small foil cups and refrigerate."
+        ],
+        addedBy: "Nan",
+        timestamp: Date.now()
+    },
+
+    // Side Dishes & Vegetables
+    {
+        id: id(),
+        title: "Potato/Turnip Seasoning",
+        category: Category.SIDE_DISHES,
+        ingredients: [
+            "Potatoes and/or turnips, cubed",
+            "Fair amount of butter",
+            "Seasoning salt",
+            "Onion salt",
+            "Garlic salt"
+        ],
+        instructions: [
+            "Toss vegetables with butter and seasoning salts.",
+            "Bake at 325–350°F for 1 hour. Shake well after 1/2 hour."
+        ],
+        temp: "325-350°F",
+        cookTime: "1 hour",
+        addedBy: "Nan",
         timestamp: Date.now()
     }
 ];
